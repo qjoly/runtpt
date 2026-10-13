@@ -70,6 +70,13 @@ f"python {sys.version_info.major}.{sys.version_info.minor} is here too"
 GET https://api.github.com/zen
 ```
 
+## Images render too
+
+A relative path resolves against this runbook's own directory, so the same file works on
+GitHub and here.
+
+![Browser and agent, with nothing in between](assets/architecture.svg)
+
 ## Present the same file
 
 Press `P`. This document becomes a deck, headings become slides, and the cells

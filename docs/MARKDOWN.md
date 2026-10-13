@@ -109,6 +109,25 @@ Closing the tab really does forget them: the agent unsets the variables it injec
 the connection drops, so a token does not linger in a shell that outlives the browser.
 What your own commands exported stays, because that is session state you asked for.
 
+## Images
+
+Ordinary markdown images work, and resolve the way a reader would expect:
+
+```markdown
+![The failover path](assets/failover.png)
+```
+
+A relative path resolves against the **runbook's own directory**, so the same file renders
+on GitHub and in runtpt without a second copy. Where the bytes come from depends on where
+the runbook came from: a repository blob fetched with your token for a GitHub runbook, or
+the agent for a runbook on disk. Either way the path is confined — an image cannot climb
+out of the repository or out of the agent's root.
+
+Absolute `http(s)` and `data:` URLs are passed through untouched; runtpt never fetches
+them on your behalf.
+
+There is a size ceiling per image. A diagram is fine; a screen recording is not.
+
 ## Speaker notes
 
 ```markdown

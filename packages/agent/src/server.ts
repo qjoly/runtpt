@@ -5,6 +5,7 @@ import path from 'node:path'
 import { Redactor } from '@runtpt/format'
 import {
   DEFAULT_AGENT_PORT,
+  MAX_ASSET_BYTES,
   PROTOCOL_VERSION,
   parseClientMessage,
   type ClientMessage,
@@ -67,6 +68,22 @@ interface Connection {
   paired: boolean
   seq: number
   active: Map<string, KernelTarget>
+}
+
+const MIME_BY_EXT: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.avif': 'image/avif',
+  '.svg': 'image/svg+xml',
+  '.bmp': 'image/bmp',
+  '.ico': 'image/x-icon',
+}
+
+function mimeOf(file: string): string {
+  return MIME_BY_EXT[path.extname(file).toLowerCase()] ?? 'application/octet-stream'
 }
 
 export class AgentServer {
@@ -187,6 +204,36 @@ export class AgentServer {
           send(conn.ws, { t: 'document', id: msg.id, path: relativeToRoot(this.root, target), content })
         } catch (err) {
           send(conn.ws, { t: 'error', id: msg.id, message: `cannot open: ${(err as Error).message}` })
+        }
+        return
+      }
+
+      case 'readAsset': {
+        const target = resolveInRoot(this.root, msg.path)
+        if (!target) return this.deny(conn, msg.id, msg.path)
+        try {
+          const stat = await fs.stat(target)
+          const ceiling = Math.min(msg.maxBytes ?? MAX_ASSET_BYTES, MAX_ASSET_BYTES)
+          if (stat.size > ceiling) {
+            send(conn.ws, {
+              t: 'error',
+              id: msg.id,
+              message: `asset is ${stat.size} bytes, over the ${ceiling} byte limit`,
+            })
+            return
+          }
+          const buffer = await fs.readFile(target)
+          send(conn.ws, {
+            t: 'asset',
+            id: msg.id,
+            path: relativeToRoot(this.root, target),
+            mime: mimeOf(target),
+            encoding: 'base64',
+            data: buffer.toString('base64'),
+            bytes: stat.size,
+          })
+        } catch (err) {
+          send(conn.ws, { t: 'error', id: msg.id, message: `cannot read asset: ${(err as Error).message}` })
         }
         return
       }

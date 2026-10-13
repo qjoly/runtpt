@@ -5,24 +5,25 @@
 ### With mise
 
 [mise](https://mise.jdx.dev) installs the standalone binary — no Node required on the
-machine that runs the cells.
+machine that runs the cells. It picks the right archive for your platform out of the
+GitHub release.
 
 ```bash
-mise use -g ubi:qjoly/runtpt
+mise use -g github:qjoly/runtpt
 runtpt --version
 ```
 
-**The repository is private**, so ubi needs a token with read access to it:
+**The repository is private**, so mise needs a token with read access to it:
 
 ```bash
 export GITHUB_TOKEN=$(gh auth token)       # or GITHUB_API_TOKEN
-mise use -g ubi:qjoly/runtpt
+mise use -g github:qjoly/runtpt
 ```
 
 Pin a version rather than tracking the tip once you depend on it:
 
 ```bash
-mise use -g ubi:qjoly/runtpt@0.1.0
+mise use -g github:qjoly/runtpt@0.1.0
 ```
 
 Released binaries exist for macOS and Linux, on arm64 and x86_64, linked against glibc.

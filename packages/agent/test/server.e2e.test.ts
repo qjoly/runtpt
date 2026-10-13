@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, writeFileSync, readFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { PROTOCOL_VERSION, type ClientMessage, type ServerMessage } from '@runtpt/protocol'
@@ -170,5 +170,60 @@ describeShell('AgentServer', () => {
     const state = await client.wait('kernelState')
     expect(['restarting', 'ready']).toContain(state.state)
     client.close()
+  })
+
+  describe('readAsset', () => {
+    // A real one-pixel PNG, so no binary fixture has to live in the repo.
+    const PNG = Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+      'base64',
+    )
+
+    it('returns an image as base64 with its mime type', async () => {
+      writeFileSync(path.join(root, 'diagram.png'), PNG)
+      const client = await paired()
+      client.send({ t: 'readAsset', id: 'a1', path: 'diagram.png' })
+      const asset = await client.wait('asset')
+      client.close()
+
+      expect(asset).toMatchObject({ mime: 'image/png', encoding: 'base64', bytes: PNG.length })
+      expect(Buffer.from(asset.data, 'base64')).toEqual(PNG)
+    })
+
+    it('resolves a path relative to the runbook inside the root', async () => {
+      mkdirSync(path.join(root, 'assets'), { recursive: true })
+      writeFileSync(path.join(root, 'assets/diagram.png'), PNG)
+      const client = await paired()
+      client.send({ t: 'readAsset', id: 'a2', path: 'assets/diagram.png' })
+      const asset = await client.wait('asset')
+      client.close()
+      expect(asset.path).toBe('assets/diagram.png')
+    })
+
+    it('refuses a path escaping the root', async () => {
+      const client = await paired()
+      client.send({ t: 'readAsset', id: 'a3', path: '../../etc/hosts' })
+      const err = await client.wait('error')
+      client.close()
+      expect(err.id).toBe('a3')
+    })
+
+    it('refuses an asset over the requested ceiling', async () => {
+      writeFileSync(path.join(root, 'big.png'), Buffer.alloc(2048))
+      const client = await paired()
+      client.send({ t: 'readAsset', id: 'a4', path: 'big.png', maxBytes: 1024 })
+      const err = await client.wait('error')
+      client.close()
+      expect(err.message).toMatch(/over the 1024 byte limit/)
+    })
+
+    it('does not guess a mime type it does not know', async () => {
+      writeFileSync(path.join(root, 'notes.bin'), Buffer.from([1, 2, 3]))
+      const client = await paired()
+      client.send({ t: 'readAsset', id: 'a5', path: 'notes.bin' })
+      const asset = await client.wait('asset')
+      client.close()
+      expect(asset.mime).toBe('application/octet-stream')
+    })
   })
 })

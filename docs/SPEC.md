@@ -121,6 +121,11 @@ slide itself. The run is recorded, so the demo can be replayed later even offlin
   A pinned cell is never affected by the override, and the UI always displays the kernel
   that will actually run — badging `bash` while executing zsh is the one thing this
   design exists to prevent.
+- `FR-D9` Markdown images render. A relative path resolves against the runbook's
+  directory and is fetched from wherever the runbook came from — a repository blob or
+  the agent's disk — never from the runtpt origin. A path that escapes the root is
+  refused, and a failure says which of the plausible reasons it was rather than showing
+  a broken image.
 - `FR-D8` An interpreter may be given explicitly, per runbook (`interpreters:`) or per
   cell (`interpreter=`). Sessions are keyed by kernel *and* interpreter, so two paths to
   the same shell are two independent sessions with independent state.

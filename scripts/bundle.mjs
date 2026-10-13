@@ -17,7 +17,7 @@ const root = fileURLToPath(new URL('..', import.meta.url))
 const entry = path.join(root, 'packages/agent/dist/cli.js')
 const outDir = path.join(root, 'dist')
 
-/** Bun's target name, and the triple ubi expects to find in an asset name. */
+/** Bun's target name, and the triple mise's github backend matches on. */
 const TARGETS = [
   { bun: 'bun-darwin-arm64', triple: 'aarch64-apple-darwin' },
   { bun: 'bun-darwin-x64', triple: 'x86_64-apple-darwin' },

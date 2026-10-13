@@ -26,7 +26,7 @@ needed on the machine that runs the cells:
 
 ```bash
 export GITHUB_TOKEN=$(gh auth token)   # the repository is private
-mise use -g ubi:qjoly/runtpt
+mise use -g github:qjoly/runtpt
 ```
 
 Then, from a checkout:

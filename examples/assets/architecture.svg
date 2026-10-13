@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 220" width="640" height="220" role="img" aria-label="The browser holds the document, the agent holds the processes">
+  <style>
+    .box { fill: none; stroke: #6b7cff; stroke-width: 2; rx: 8; }
+    .agent { stroke: #3fb950; }
+    .t { font: 600 15px ui-sans-serif, system-ui, sans-serif; fill: #c9d1d9; }
+    .s { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace; fill: #8b949e; }
+    .link { stroke: #8b949e; stroke-width: 1.5; stroke-dasharray: 5 4; }
+    .cap { font: 11px ui-sans-serif, system-ui, sans-serif; fill: #8b949e; }
+  </style>
+  <rect class="box" x="24" y="40" width="240" height="120" rx="8" />
+  <text class="t" x="44" y="70">Browser</text>
+  <text class="s" x="44" y="94">the document</text>
+  <text class="s" x="44" y="114">parse · render · orchestrate</text>
+  <text class="s" x="44" y="134">writes the .runtpt</text>
+
+  <rect class="box agent" x="376" y="40" width="240" height="120" rx="8" />
+  <text class="t" x="396" y="70">Agent</text>
+  <text class="s" x="396" y="94">the processes</text>
+  <text class="s" x="396" y="114">shells · python · http</text>
+  <text class="s" x="396" y="134">your disk, your network</text>
+
+  <line class="link" x1="264" y1="100" x2="376" y2="100" />
+  <text class="cap" x="320" y="92" text-anchor="middle">WebSocket</text>
+  <text class="cap" x="320" y="118" text-anchor="middle">loopback, paired</text>
+
+  <text class="cap" x="320" y="192" text-anchor="middle">No runtpt server sits between them.</text>
+</svg>

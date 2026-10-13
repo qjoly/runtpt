@@ -9,6 +9,9 @@
 export const PROTOCOL_VERSION = 1
 export const DEFAULT_AGENT_PORT = 7777
 
+/** Ceiling for a single markdown asset. Big enough for a diagram, not a video. */
+export const MAX_ASSET_BYTES = 8 * 1024 * 1024
+
 export type KernelId = 'bash' | 'sh' | 'zsh' | 'python' | 'http'
 
 export interface KernelInfo {
@@ -50,6 +53,19 @@ export interface OpenMsg {
   t: 'open'
   id: string
   path: string
+}
+
+/**
+ * Reads a binary asset (an image a runbook references) from inside the agent's
+ * root. Separate from `open` because that one is text, and markdown images are
+ * the one place a runbook needs bytes.
+ */
+export interface ReadAssetMsg {
+  t: 'readAsset'
+  id: string
+  path: string
+  /** Refuse anything larger. The agent applies its own ceiling as well. */
+  maxBytes?: number
 }
 
 export interface SaveMsg {
@@ -109,6 +125,7 @@ export type ClientMessage =
   | HelloMsg
   | ListDirMsg
   | OpenMsg
+  | ReadAssetMsg
   | SaveMsg
   | RunMsg
   | CancelMsg
@@ -153,6 +170,16 @@ export interface DocumentMsg {
   id: string
   path: string
   content: string
+}
+
+export interface AssetMsg {
+  t: 'asset'
+  id: string
+  path: string
+  mime: string
+  encoding: 'base64'
+  data: string
+  bytes: number
 }
 
 export interface SavedMsg {
@@ -216,6 +243,7 @@ export type ServerMessage =
   | DeniedMsg
   | DirMsg
   | DocumentMsg
+  | AssetMsg
   | SavedMsg
   | ChunkMsg
   | DisplayMsg
@@ -228,7 +256,7 @@ export type ServerMessage =
 /* ------------------------------------------------------------------ */
 
 const CLIENT_TYPES = new Set([
-  'hello', 'listDir', 'open', 'save', 'run', 'cancel', 'stdin', 'restart', 'redact',
+  'hello', 'listDir', 'open', 'readAsset', 'save', 'run', 'cancel', 'stdin', 'restart', 'redact',
 ])
 
 export function parseClientMessage(raw: string): ClientMessage | null {

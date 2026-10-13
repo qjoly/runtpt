@@ -1,25 +1,25 @@
-{"t":"header","v":1,"runbook":{"path":"examples/tour.md"},"run":{"id":"162fd588-9551-4279-bd77-e2e5db2037cc","started":"2026-10-13T15:04:20.238Z","params":{"TARGET":"this machine"}},"host":{"name":"Matcha.local","os":"darwin","arch":"arm64","agent":"runtpt-agent/0.1.0","cwd":"/Users/qjoly/code/runtpt"}}
-{"t":"cell","id":"setup","hash":"sha256:05b679e056d1a0b89573fe4d723e3fcebc21cd3e3f03083c68fb5962cab31cc5","kernel":"bash","source":"export TOUR_TARGET=\"this machine\"\ncd /tmp\necho \"working in $(pwd)\"","started":"2026-10-13T15:04:20.239Z","seq":1}
-{"t":"out","id":"setup","seq":2,"stream":"stdout","at":"2026-10-13T15:04:20.242Z","data":"working in /tmp\n"}
-{"t":"result","id":"setup","seq":3,"status":"ok","exit":0,"duration_ms":1,"ended":"2026-10-13T15:04:20.242Z"}
-{"t":"cell","id":"state","hash":"sha256:8a88e6c6251f6316da136116aefb11009a248d8d2b15168a175ed0aa22572102","kernel":"bash","source":"echo \"still in $(pwd), still looking at $TOUR_TARGET\"","started":"2026-10-13T15:04:20.242Z","seq":4}
-{"t":"out","id":"state","seq":5,"stream":"stdout","at":"2026-10-13T15:04:20.243Z","data":"still in /tmp, still looking at this machine\n"}
-{"t":"result","id":"state","seq":6,"status":"ok","exit":0,"duration_ms":1,"ended":"2026-10-13T15:04:20.243Z"}
-{"t":"cell","id":"facts","hash":"sha256:c38879850b203ca36d5d05c60f26307f57b2afd5fce58f9a407eb6b4a92f26da","kernel":"bash","source":"printf '%-10s %s\\n' host \"$(hostname)\" kernel \"$(uname -s)\" shell \"$(ps -o comm= -p $$)\"","started":"2026-10-13T15:04:20.243Z","seq":7}
-{"t":"out","id":"facts","seq":8,"stream":"stdout","at":"2026-10-13T15:04:20.249Z","data":"host       "}
-{"t":"out","id":"facts","seq":9,"stream":"stdout","at":"2026-10-13T15:04:20.249Z","data":"Matcha.local\nkernel     Darwin\nshell      /bin/bash\n"}
-{"t":"result","id":"facts","seq":10,"status":"ok","exit":0,"duration_ms":6,"ended":"2026-10-13T15:04:20.249Z"}
-{"t":"cell","id":"breaks","hash":"sha256:6d80ebdefe23c009850334c73e39cd57f84a7e49dcb6f9bf1416daee2259881c","kernel":"bash","source":"echo \"about to fail\" >&2\nexit 3","started":"2026-10-13T15:04:20.249Z","seq":11}
-{"t":"out","id":"breaks","seq":12,"stream":"stderr","at":"2026-10-13T15:04:20.250Z","data":"about to fail\n"}
-{"t":"result","id":"breaks","seq":13,"status":"failed","exit":3,"duration_ms":1,"ended":"2026-10-13T15:04:20.250Z"}
-{"t":"cell","id":"skipped","hash":"sha256:b4e9095f27bd9d6ade1429a2adccae28849d0fb0283e1caa93c280ea54a45a82","kernel":"bash","source":"echo \"you should never see this\"","started":"2026-10-13T15:04:20.250Z","seq":14}
-{"t":"note","at":"2026-10-13T15:04:20.250Z","text":"skipped: dependency \"breaks\" failed","after":"skipped"}
-{"t":"result","id":"skipped","seq":15,"status":"skipped","exit":null,"duration_ms":0,"ended":"2026-10-13T15:04:20.250Z"}
-{"t":"cell","id":"python","hash":"sha256:c540a795be15a233f453543f4b56641c2fae0ed5ef388555655e8d9f29153473","kernel":"python","source":"import sys\nf\"python {sys.version_info.major}.{sys.version_info.minor} is here too\"","started":"2026-10-13T15:04:20.250Z","seq":16}
-{"t":"out","id":"python","seq":17,"stream":"stdout","at":"2026-10-13T15:04:20.280Z","data":"'python 3.9 is here too'\n"}
-{"t":"result","id":"python","seq":18,"status":"ok","exit":0,"duration_ms":29,"ended":"2026-10-13T15:04:20.280Z"}
-{"t":"cell","id":"http","hash":"sha256:e98fb11bf36a267734b6fe646e4df89b85c0eed28c9db1a094ccbc59b7ea7e13","kernel":"http","source":"GET https://api.github.com/zen","started":"2026-10-13T15:04:20.280Z","seq":19}
-{"t":"out","id":"http","seq":20,"stream":"stdout","at":"2026-10-13T15:04:20.384Z","data":"200 OK\naccept-ranges: bytes\naccess-control-allow-origin: *\naccess-control-expose-headers: ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning\ncontent-length: 19\ncontent-security-policy: default-src 'none'\ncontent-type: text/plain;charset=utf-8\ndate: Tue, 13 Oct 2026 15:04:17 GMT\nreferrer-policy: origin-when-cross-origin, strict-origin-when-cross-origin\nserver: github.com\nstrict-transport-security: max-age=31536000; includeSubdomains; preload\nvary: Accept-Encoding, Accept, X-Requested-With\nx-content-type-options: nosniff\nx-frame-options: deny\nx-github-api-version-selected: 2022-11-28\nx-github-edge-region: fra\nx-github-request-id: DFD4:224D8C:7D9624:B8D459:6ACE4874\nx-ratelimit-limit: 60\nx-ratelimit-remaining: 51\nx-ratelimit-reset: 1791904002\nx-ratelimit-resource: core\nx-ratelimit-used: 9\nx-xss-protection: 0\n\n"}
-{"t":"out","id":"http","seq":21,"stream":"stdout","at":"2026-10-13T15:04:20.384Z","data":"Speak like a human.\n"}
-{"t":"result","id":"http","seq":22,"status":"ok","exit":0,"duration_ms":104,"ended":"2026-10-13T15:04:20.384Z"}
-{"t":"footer","ended":"2026-10-13T15:04:20.384Z","status":"ok","cells":{"ok":5,"failed":1,"skipped":1,"tolerated":1}}
+{"t":"header","v":1,"runbook":{"path":"examples/tour.md"},"run":{"id":"911aa67d-ab53-4ff5-a20b-68f22fb92d98","started":"2026-10-13T15:19:48.580Z","params":{"TARGET":"this machine"}},"host":{"name":"Matcha.local","os":"darwin","arch":"arm64","agent":"runtpt-agent/0.1.0","cwd":"/Users/qjoly/code/runtpt"}}
+{"t":"cell","id":"setup","hash":"sha256:05b679e056d1a0b89573fe4d723e3fcebc21cd3e3f03083c68fb5962cab31cc5","kernel":"bash","source":"export TOUR_TARGET=\"this machine\"\ncd /tmp\necho \"working in $(pwd)\"","started":"2026-10-13T15:19:48.581Z","seq":1}
+{"t":"out","id":"setup","seq":2,"stream":"stdout","at":"2026-10-13T15:19:48.584Z","data":"working in /tmp\n"}
+{"t":"result","id":"setup","seq":3,"status":"ok","exit":0,"duration_ms":1,"ended":"2026-10-13T15:19:48.584Z"}
+{"t":"cell","id":"state","hash":"sha256:8a88e6c6251f6316da136116aefb11009a248d8d2b15168a175ed0aa22572102","kernel":"bash","source":"echo \"still in $(pwd), still looking at $TOUR_TARGET\"","started":"2026-10-13T15:19:48.584Z","seq":4}
+{"t":"out","id":"state","seq":5,"stream":"stdout","at":"2026-10-13T15:19:48.585Z","data":"still in /tmp, still looking at this machine\n"}
+{"t":"result","id":"state","seq":6,"status":"ok","exit":0,"duration_ms":0,"ended":"2026-10-13T15:19:48.585Z"}
+{"t":"cell","id":"facts","hash":"sha256:c38879850b203ca36d5d05c60f26307f57b2afd5fce58f9a407eb6b4a92f26da","kernel":"bash","source":"printf '%-10s %s\\n' host \"$(hostname)\" kernel \"$(uname -s)\" shell \"$(ps -o comm= -p $$)\"","started":"2026-10-13T15:19:48.585Z","seq":7}
+{"t":"out","id":"facts","seq":8,"stream":"stdout","at":"2026-10-13T15:19:48.591Z","data":"host       "}
+{"t":"out","id":"facts","seq":9,"stream":"stdout","at":"2026-10-13T15:19:48.591Z","data":"Matcha.local\nkernel     Darwin\nshell      /bin/bash\n"}
+{"t":"result","id":"facts","seq":10,"status":"ok","exit":0,"duration_ms":6,"ended":"2026-10-13T15:19:48.591Z"}
+{"t":"cell","id":"breaks","hash":"sha256:6d80ebdefe23c009850334c73e39cd57f84a7e49dcb6f9bf1416daee2259881c","kernel":"bash","source":"echo \"about to fail\" >&2\nexit 3","started":"2026-10-13T15:19:48.591Z","seq":11}
+{"t":"out","id":"breaks","seq":12,"stream":"stderr","at":"2026-10-13T15:19:48.592Z","data":"about to fail\n"}
+{"t":"result","id":"breaks","seq":13,"status":"failed","exit":3,"duration_ms":0,"ended":"2026-10-13T15:19:48.592Z"}
+{"t":"cell","id":"skipped","hash":"sha256:b4e9095f27bd9d6ade1429a2adccae28849d0fb0283e1caa93c280ea54a45a82","kernel":"bash","source":"echo \"you should never see this\"","started":"2026-10-13T15:19:48.592Z","seq":14}
+{"t":"note","at":"2026-10-13T15:19:48.592Z","text":"skipped: dependency \"breaks\" failed","after":"skipped"}
+{"t":"result","id":"skipped","seq":15,"status":"skipped","exit":null,"duration_ms":0,"ended":"2026-10-13T15:19:48.592Z"}
+{"t":"cell","id":"python","hash":"sha256:c540a795be15a233f453543f4b56641c2fae0ed5ef388555655e8d9f29153473","kernel":"python","source":"import sys\nf\"python {sys.version_info.major}.{sys.version_info.minor} is here too\"","started":"2026-10-13T15:19:48.592Z","seq":16}
+{"t":"out","id":"python","seq":17,"stream":"stdout","at":"2026-10-13T15:19:48.617Z","data":"'python 3.9 is here too'\n"}
+{"t":"result","id":"python","seq":18,"status":"ok","exit":0,"duration_ms":24,"ended":"2026-10-13T15:19:48.617Z"}
+{"t":"cell","id":"http","hash":"sha256:e98fb11bf36a267734b6fe646e4df89b85c0eed28c9db1a094ccbc59b7ea7e13","kernel":"http","source":"GET https://api.github.com/zen","started":"2026-10-13T15:19:48.617Z","seq":19}
+{"t":"out","id":"http","seq":20,"stream":"stdout","at":"2026-10-13T15:19:48.715Z","data":"200 OK\naccept-ranges: bytes\naccess-control-allow-origin: *\naccess-control-expose-headers: ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset, Warning\ncontent-encoding: gzip\ncontent-length: 44\ncontent-security-policy: default-src 'none'\ncontent-type: text/plain;charset=utf-8\ndate: Tue, 13 Oct 2026 15:19:46 GMT\nreferrer-policy: origin-when-cross-origin, strict-origin-when-cross-origin\nserver: github.com\nstrict-transport-security: max-age=31536000; includeSubdomains; preload\nvary: Accept-Encoding, Accept, X-Requested-With\nx-content-type-options: nosniff\nx-frame-options: deny\nx-github-api-version-selected: 2022-11-28\nx-github-edge-region: fra\nx-github-request-id: F3DB:305C9E:A43310:F15CDE:6ACE4C14\nx-ratelimit-limit: 60\nx-ratelimit-remaining: 58\nx-ratelimit-reset: 1791907608\nx-ratelimit-resource: core\nx-ratelimit-used: 2\nx-xss-protection: 0\n\n"}
+{"t":"out","id":"http","seq":21,"stream":"stdout","at":"2026-10-13T15:19:48.716Z","data":"Favor focus over features.\n"}
+{"t":"result","id":"http","seq":22,"status":"ok","exit":0,"duration_ms":98,"ended":"2026-10-13T15:19:48.716Z"}
+{"t":"footer","ended":"2026-10-13T15:19:48.716Z","status":"ok","cells":{"ok":5,"failed":1,"skipped":1,"tolerated":1}}
