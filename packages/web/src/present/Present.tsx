@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { buildSlides, type Block, type Cell, type Runbook } from '@runtpt/core'
+import { useAssets } from '../assets/context.js'
 import { Markdown } from '../ui/Markdown.js'
 import { OutputView } from '../runbook/OutputView.js'
 import type { Runner } from '../runbook/useRunner.js'
@@ -65,6 +66,7 @@ function SlideCell({
 
 export function Present({ runbook, runner, canRun, canReplay, onRun, onExit }: Props) {
   const slides = useMemo(() => buildSlides(runbook), [runbook])
+  const assets = useAssets()
   const [index, setIndex] = useState(0)
   const [step, setStep] = useState(0)
   const [focusedId, setFocusedId] = useState<string | null>(null)
@@ -203,6 +205,7 @@ export function Present({ runbook, runner, canRun, canReplay, onRun, onExit }: P
                 slides,
                 states: runner.states,
                 resolve: runner.resolveText,
+                assets,
               }),
             )
           }

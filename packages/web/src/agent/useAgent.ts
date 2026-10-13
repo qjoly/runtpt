@@ -4,6 +4,7 @@ import {
   PROTOCOL_VERSION,
   parseServerMessage,
   type ClientMessage,
+  type AssetMsg,
   type DirMsg,
   type DocumentMsg,
   type HostInfo,
@@ -42,6 +43,8 @@ export interface AgentApi {
   cancel: (runId: string, cellId: string) => void
   listDir: (path: string) => Promise<DirMsg>
   open: (path: string) => Promise<DocumentMsg>
+  /** Binary read for the images a runbook references. */
+  readAsset: (path: string, maxBytes?: number) => Promise<AssetMsg>
   save: (path: string, content: string, append?: boolean) => Promise<SavedMsg>
   restart: (kernel: KernelId) => void
   redact: (values: Record<string, string>) => void
@@ -161,6 +164,7 @@ export function useAgent(): AgentApi {
             break
           case 'dir':
           case 'document':
+          case 'asset':
           case 'saved': {
             const waiting = pending.current.get(msg.id)
             if (waiting) {
@@ -236,6 +240,8 @@ export function useAgent(): AgentApi {
       cancel: (runId, cellId) => send({ t: 'cancel', runId, cellId }),
       listDir: (path) => request<DirMsg>((id) => ({ t: 'listDir', id, path })),
       open: (path) => request<DocumentMsg>((id) => ({ t: 'open', id, path })),
+      readAsset: (path, maxBytes) =>
+        request<AssetMsg>((id) => ({ t: 'readAsset', id, path, ...(maxBytes ? { maxBytes } : {}) })),
       save: (path, content, append) =>
         request<SavedMsg>((id) => ({ t: 'save', id, path, content, ...(append ? { append: true } : {}) })),
       restart: (kernel) => send({ t: 'restart', kernel }),

@@ -1,6 +1,8 @@
 import { isStale, type Cell, type Runbook } from '@runtpt/core'
 import type { CellRun, NoteRecord, RunRecording } from '@runtpt/format'
-import { Markdown } from '../ui/Markdown.js'
+import { useMemo } from 'react'
+import { Markdown, type ChecklistView } from '../ui/Markdown.js'
+import { buildChecklistIndex, lineIndexOf, mergeChecks } from '../runbook/checklist.js'
 import { OutputView } from '../runbook/OutputView.js'
 import type { OutChunk } from '../runbook/useRunner.js'
 
@@ -79,6 +81,28 @@ export function ReplayView({ recording, runbook, label, onLoadRunbook }: Props) 
   const notesFor = (id: string) => recording.notes.filter((n) => n.after === id)
   const rendered = new Set<string>()
 
+  const prose = useMemo(
+    () => (runbook ? runbook.blocks.map((block) => (block.kind === 'prose' ? block.markdown : '')) : []),
+    [runbook],
+  )
+  const checklist = useMemo(() => {
+    const index = buildChecklistIndex(prose)
+    const state = recording.checkState
+    return {
+      views: index.byBlock.map((items): ChecklistView => {
+        const byLine = lineIndexOf(items)
+        return {
+          itemAt: (line) => byLine.get(line),
+          checked: (item) => state.get(item.id)?.checked ?? false,
+          at: (item) => state.get(item.id)?.at,
+          note: (item) => (state.has(item.id) ? undefined : 'not ticked in this run'),
+          readOnly: true,
+        }
+      }),
+      ...mergeChecks(index.items, state),
+    }
+  }, [prose, recording])
+
   return (
     <article className="document replay">
       <div className="replay-head">
@@ -153,7 +177,8 @@ export function ReplayView({ recording, runbook, label, onLoadRunbook }: Props) 
 
       {runbook
         ? runbook.blocks.map((block, index) => {
-            if (block.kind === 'prose') return <Markdown key={index} text={block.markdown} />
+            if (block.kind === 'prose')
+              return <Markdown key={index} text={prose[index]!} checklist={checklist.views[index]} />
             if (block.kind !== 'cell') return null
             const { cell } = block
             const run = recording.byId.get(cell.id)
@@ -195,6 +220,26 @@ export function ReplayView({ recording, runbook, label, onLoadRunbook }: Props) 
               <Notes notes={notesFor(run.id)} />
             </div>
           ))}
+
+      {checklist.orphans.length > 0 && (
+        <section className="cell recorded idle">
+          <header className="cell-head">
+            <span className="cell-id">ticked items</span>
+            {runbook && <span className="chip">no longer in the runbook</span>}
+          </header>
+          <ul className="prose orphan-checks">
+            {checklist.orphans.map((record) => (
+              <li key={record.id} className="check-item">
+                <label title={new Date(record.at).toLocaleString()}>
+                  <input type="checkbox" checked={record.checked} disabled readOnly />
+                  <span className="check-label">{record.text}</span>
+                </label>
+                <span className="meta check-at">{new Date(record.at).toLocaleTimeString()}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <Notes notes={recording.notes.filter((n) => !n.after)} />
 

@@ -93,7 +93,15 @@ export interface PresentationSettings {
   slides: 'hr' | 'h1' | 'h2'
 }
 
+/**
+ * `tagged` (the default) keeps a plain fence inert, so existing documentation does
+ * not become executable by being opened. `all` is the opt-in for a runbook written
+ * as ordinary markdown: annotating several hundred fences by hand is not a plan.
+ */
+export type CellMode = 'tagged' | 'all'
+
 export interface RuntptSettings {
+  cells: CellMode
   shell: ShellChoice
   cwd?: string
   env: Record<string, string>
@@ -128,6 +136,7 @@ export interface Runbook {
 }
 
 export const DEFAULT_SETTINGS: RuntptSettings = {
+  cells: 'tagged',
   shell: { kernel: 'bash' },
   env: {},
   interpreters: {},

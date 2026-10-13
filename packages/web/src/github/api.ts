@@ -212,3 +212,41 @@ export function parseBlobUrl(input: string): BlobLocation | null {
 
   return null
 }
+
+export interface GhBlob {
+  base64: string
+  bytes: number
+}
+
+/**
+ * Binary read through the API rather than raw.githubusercontent, because a
+ * private repository only answers to the token. Over 1 MB the contents endpoint
+ * stops inlining the bytes, hence the blob fallback.
+ */
+export async function getBlob(
+  owner: string,
+  repo: string,
+  path: string,
+  ref: string,
+  token: string | null,
+  maxBytes: number,
+): Promise<GhBlob> {
+  const encodedPath = path.split('/').map(encodeURIComponent).join('/')
+  const meta = await call<{ content?: string; encoding?: string; size?: number; sha: string; type?: string }>(
+    `/repos/${owner}/${repo}/contents/${encodedPath}?ref=${encodeURIComponent(ref)}`,
+    token,
+  )
+  if (meta.type && meta.type !== 'file') throw new GitHubError('Not a file', 415)
+  const size = meta.size ?? 0
+  if (size > maxBytes) throw new GitHubError(`File is ${size} bytes, over the ${maxBytes} byte limit`, 413)
+
+  if (meta.content && meta.encoding === 'base64') {
+    return { base64: meta.content.replace(/\n/g, ''), bytes: size }
+  }
+  const blob = await call<{ content: string; encoding: string; size: number }>(
+    `/repos/${owner}/${repo}/git/blobs/${meta.sha}`,
+    token,
+  )
+  if (blob.encoding !== 'base64') throw new GitHubError('Unexpected blob encoding', 415)
+  return { base64: blob.content.replace(/\n/g, ''), bytes: blob.size ?? size }
+}

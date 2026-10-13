@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { Slide } from '@runtpt/core'
+import { AssetProvider, type AssetContextValue } from '../assets/context.js'
 import { Markdown } from '../ui/Markdown.js'
 import { OutputView } from '../runbook/OutputView.js'
 import type { CellState } from '../runbook/useRunner.js'
@@ -37,8 +38,10 @@ export function exportDeck(args: {
   slides: Slide[]
   states: Record<string, CellState>
   resolve: (source: string) => string
+  /** Images already in the cache are inlined; the rest fall back to their alt text. */
+  assets: AssetContextValue | null
 }): string {
-  const body = renderToStaticMarkup(
+  const tree = (
     <div className="deck export">
       {args.slides.map((slide) => (
         <section key={slide.index} className="slide">
@@ -65,7 +68,11 @@ export function exportDeck(args: {
           </div>
         </section>
       ))}
-    </div>,
+    </div>
+  )
+
+  const body = renderToStaticMarkup(
+    args.assets ? <AssetProvider value={{ ...args.assets, mode: 'export' }}>{tree}</AssetProvider> : tree,
   )
 
   return `<!doctype html>

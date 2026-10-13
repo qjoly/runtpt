@@ -168,3 +168,39 @@ describe('notes and directives', () => {
     expect(directives).toMatchObject([{ name: 'pause' }, { name: 'checkpoint', arg: 'before-restart' }])
   })
 })
+
+describe('inert fences', () => {
+  const roundTrips = (doc: string): boolean => {
+    const rb = parseRunbook(doc)
+    return rb.blocks.filter((b) => b.kind === 'prose').map((b) => (b as { markdown: string }).markdown).join('\n') === doc
+  }
+
+  it('re-emits an indented snippet exactly as written', () => {
+    expect(roundTrips('- item:\n\n  ```yaml\n  key: value\n  ```\n\nafter')).toBe(true)
+  })
+
+  it('re-emits a flush-left snippet exactly as written', () => {
+    expect(roundTrips('before\n\n```yaml\nkey: value\n```\n\nafter')).toBe(true)
+  })
+
+  it('re-emits a tilde snippet exactly as written', () => {
+    expect(roundTrips('  ~~~text\n  raw\n  ~~~')).toBe(true)
+  })
+
+  // An indented snippet that lost its indentation broke every HTML block after it.
+  it('leaves the markdown after an indented snippet intact', () => {
+    const doc = [
+      '<details>',
+      '<summary>Why</summary>',
+      '',
+      '- step:',
+      '',
+      '  ```yaml',
+      '  key: value',
+      '  ```',
+      '',
+      '</details>',
+    ].join('\n')
+    expect(roundTrips(doc)).toBe(true)
+  })
+})

@@ -121,6 +121,14 @@ slide itself. The run is recorded, so the demo can be replayed later even offlin
   A pinned cell is never affected by the override, and the UI always displays the kernel
   that will actually run — badging `bash` while executing zsh is the one thing this
   design exists to prevent.
+- `FR-D10` A runbook may arm every fence at once with `cells: all`, for a procedure
+  written as ordinary markdown. The default stays opt-in per fence, so opening existing
+  documentation never makes it executable.
+- `FR-D11` Task-list items are tickable during a run and recorded, so a replay shows how
+  far the intervention got — a procedure is half commands and half human steps, and a
+  recording of only the commands tells half the story.
+- `FR-D12` GitHub alert blockquotes and `<details>` sections render as themselves. Raw
+  HTML is sanitised: runbook content comes from a repository and must not script the page.
 - `FR-D9` Markdown images render. A relative path resolves against the runbook's
   directory and is fetched from wherever the runbook came from — a repository blob or
   the agent's disk — never from the runtpt origin. A path that escapes the root is

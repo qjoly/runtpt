@@ -97,6 +97,10 @@ function readSettings(fm: Record<string, unknown> | null, diagnostics: Diagnosti
   if (typeof raw !== 'object' || raw === null) return settings
   const o = raw as Record<string, unknown>
 
+  const cells = asString(o.cells)
+  if (cells === 'all' || cells === 'tagged') settings.cells = cells
+  else if (cells) diagnostics.push({ level: 'warn', message: `Unknown cells mode "${cells}", keeping "tagged"` })
+
   const shell = asString(o.shell)
   if (shell) settings.shell = parseShellChoice(shell, diagnostics)
 
@@ -258,12 +262,14 @@ export function parseRunbook(source: string, diagnostics: Diagnostic[] = []): Ru
     }
 
     const parsed = parseInfoString(info, diagnostics, i + 1)
-    const executable = isKernel(parsed.lang) && parsed.hasAttrs
+    const executable = isKernel(parsed.lang) && (parsed.hasAttrs || settings.cells === 'all')
     const sourceText = body.join('\n')
 
     if (!executable) {
-      // Inert snippet: keep it inside the prose stream, verbatim.
-      prose.push(line, ...body, lines[j]!)
+      // Verbatim means the original lines: `body` has been de-indented for the
+      // cell path, and re-emitting it between still-indented fence markers broke
+      // the markdown that followed an indented snippet.
+      prose.push(...lines.slice(i, j + 1))
       i = j
       continue
     }

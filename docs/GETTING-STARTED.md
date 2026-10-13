@@ -9,7 +9,7 @@ machine that runs the cells. It picks the right archive for your platform out of
 GitHub release.
 
 ```bash
-mise use -g github:qjoly/runtpt
+mise use -g github:qjoly/runtpt@0.1.0
 runtpt --version
 ```
 
@@ -17,13 +17,18 @@ runtpt --version
 
 ```bash
 export GITHUB_TOKEN=$(gh auth token)       # or GITHUB_API_TOKEN
-mise use -g github:qjoly/runtpt
+mise use -g github:qjoly/runtpt@0.1.0
 ```
 
-Pin a version rather than tracking the tip once you depend on it:
+**Pin the version, do not ask for `@latest`.** mise refuses releases younger than 24
+hours as a supply-chain precaution (`minimum_release_age`, default `24h`), and reports it
+as `no versions found ... matching date filter` — which reads like the release is missing.
+Exact versions and versions recorded in `mise.lock` are exempt from that filter.
+
+To install a fresh release without pinning, lower the bar for that one command:
 
 ```bash
-mise use -g github:qjoly/runtpt@0.1.0
+mise use -g --minimum-release-age=0 github:qjoly/runtpt
 ```
 
 Released binaries exist for macOS and Linux, on arm64 and x86_64, linked against glibc.

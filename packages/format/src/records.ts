@@ -70,6 +70,19 @@ export interface NoteRecord {
   after?: string
 }
 
+/**
+ * A checklist item the operator ticked. A procedure is half commands and half
+ * human steps; without these the recording only tells half the story.
+ */
+export interface CheckRecord {
+  t: 'check'
+  id: string
+  /** The item's label, so a recording reads without the runbook at hand. */
+  text: string
+  checked: boolean
+  at: string
+}
+
 export interface FooterRecord {
   t: 'footer'
   ended: string
@@ -84,6 +97,7 @@ export type RuntptRecord =
   | OutRecord
   | ResultRecord
   | NoteRecord
+  | CheckRecord
   | FooterRecord
 
 /** Unknown record types must survive a round-trip rather than be dropped. */
@@ -95,5 +109,5 @@ export interface UnknownRecord {
 export type AnyRecord = RuntptRecord | UnknownRecord
 
 export function isKnownRecord(r: AnyRecord): r is RuntptRecord {
-  return ['header', 'cell', 'out', 'result', 'note', 'footer'].includes(r.t)
+  return ['header', 'cell', 'out', 'result', 'note', 'check', 'footer'].includes(r.t)
 }

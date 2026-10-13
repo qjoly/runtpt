@@ -66,6 +66,16 @@ unreadable.
 This is the record that makes a `.runtpt` worth reviewing: a run annotated by the person
 who did it beats a transcript.
 
+### `check` — a checklist item ticked or unticked
+
+```json
+{"t":"check","id":"ck-9f1c4a","text":"The source cluster is confirmed down","checked":true,"at":"2026-10-13T09:13:22Z"}
+```
+
+Both the tick and a later untick are recorded, in order; the last one is the final state.
+The label is stored so the recording reads without the runbook, and goes through the
+redactor like everything else.
+
 ### `footer` — written on clean completion
 
 ```json

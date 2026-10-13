@@ -156,6 +156,16 @@ export class RuntptWriter {
     })
   }
 
+  check(args: { id: string; text: string; checked: boolean; at?: string }): void {
+    this.emit({
+      t: 'check',
+      id: args.id,
+      text: this.redact(args.text),
+      checked: args.checked,
+      at: args.at ?? new Date().toISOString(),
+    })
+  }
+
   /** Absence of a footer is itself information: the run was interrupted. */
   footer(status?: FooterRecord['status']): void {
     if (this.closed) return

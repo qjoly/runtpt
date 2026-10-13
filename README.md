@@ -26,8 +26,12 @@ needed on the machine that runs the cells:
 
 ```bash
 export GITHUB_TOKEN=$(gh auth token)   # the repository is private
-mise use -g github:qjoly/runtpt
+mise use -g github:qjoly/runtpt@0.1.0
 ```
+
+Pin the version. mise skips releases younger than 24 hours by default
+(`minimum_release_age`), so `@latest` fails on a fresh tag — and pinning is what you
+want anyway.
 
 Then, from a checkout:
 

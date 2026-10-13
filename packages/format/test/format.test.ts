@@ -241,3 +241,30 @@ describe('runtptPathFor', () => {
     expect(runtptPathFor('notes')).toBe('notes.runtpt')
   })
 })
+
+describe('checklist items', () => {
+  it('records each tick with its label, and exposes the final state', () => {
+    const { w, text } = writer()
+    w.header()
+    w.check({ id: 'c1', text: 'The source kluster is confirmed down', checked: true })
+    w.check({ id: 'c2', text: 'The decision has been recorded', checked: true })
+    w.check({ id: 'c2', text: 'The decision has been recorded', checked: false })
+    w.footer()
+
+    const rec = readRuntpt(text())
+    expect(rec.checks).toHaveLength(3)
+    expect(rec.checkState.get('c1')?.checked).toBe(true)
+    // The last word wins, but the unticking stays in the log.
+    expect(rec.checkState.get('c2')?.checked).toBe(false)
+    expect(rec.checkState.get('c1')?.text).toContain('confirmed down')
+  })
+
+  it('redacts a secret that made it into a checklist label', () => {
+    const redactor = new Redactor()
+    redactor.add('TOKEN', 'hunter2000')
+    const { w, text } = writer({ redactor })
+    w.header()
+    w.check({ id: 'c1', text: 'pasted hunter2000 into the console', checked: true })
+    expect(text()).not.toContain('hunter2000')
+  })
+})

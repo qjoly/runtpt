@@ -1,6 +1,7 @@
 import type {
   AnyRecord,
   CellRecord,
+  CheckRecord,
   CellStatus,
   FooterRecord,
   HeaderRecord,
@@ -29,6 +30,10 @@ export interface RunRecording {
   cells: CellRun[]
   byId: Map<string, CellRun>
   notes: NoteRecord[]
+  /** Every tick and untick, in order. */
+  checks: CheckRecord[]
+  /** Final state per checklist item, which is usually what a reader wants. */
+  checkState: Map<string, CheckRecord>
   footer: FooterRecord | null
   /** Records whose type we do not know; kept so a round-trip loses nothing. */
   unknown: AnyRecord[]
@@ -69,6 +74,8 @@ export function buildRecording(records: AnyRecord[], truncated = false): RunReco
     cells: [],
     byId: new Map(),
     notes: [],
+    checks: [],
+    checkState: new Map(),
     footer: null,
     unknown: [],
     interrupted: true,
@@ -124,6 +131,12 @@ export function buildRecording(records: AnyRecord[], truncated = false): RunReco
       case 'note':
         rec.notes.push(r as NoteRecord)
         break
+      case 'check': {
+        const c = r as CheckRecord
+        rec.checks.push(c)
+        rec.checkState.set(c.id, c)
+        break
+      }
       case 'footer':
         rec.footer = r as FooterRecord
         rec.interrupted = false

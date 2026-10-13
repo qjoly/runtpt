@@ -31,6 +31,24 @@ runtpt:
 Everything under `runtpt:` is optional. A runbook with no frontmatter still runs, with
 `bash` in the directory the agent was started from.
 
+### Arming a runbook written as plain markdown
+
+By default a fence has to opt in, one by one. That is right for documentation that merely
+*contains* commands, and wrong for a procedure written to be executed: nobody is going to
+annotate three hundred fences by hand.
+
+```yaml
+---
+runtpt:
+  cells: all
+---
+```
+
+With `cells: all`, every fence whose language is a known kernel becomes executable; a
+`yaml`, `diff` or `text` fence stays prose, because it was never a command. Per-cell
+attributes still apply on top, so you can still pin an `id`, a `timeout` or a `confirm`
+on the few cells that need one.
+
 ## Executable cells
 
 An executable cell is a fenced code block whose info string starts with a known kernel
@@ -108,6 +126,19 @@ reaches the browser or the `.runtpt`.
 Closing the tab really does forget them: the agent unsets the variables it injected when
 the connection drops, so a token does not linger in a shell that outlives the browser.
 What your own commands exported stays, because that is session state you asked for.
+
+## Checklists
+
+A task list is part of the procedure, not decoration:
+
+```markdown
+- [ ] The source cluster is confirmed down
+- [ ] The decision to fail over is recorded, with a named owner
+```
+
+Ticking one during a run writes a `check` record into the `.runtpt`, with its label and
+the time. A replay therefore shows how far the intervention actually got, which is most
+of what anyone wants to know afterwards.
 
 ## Images
 

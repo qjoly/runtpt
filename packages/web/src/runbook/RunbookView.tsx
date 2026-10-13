@@ -1,6 +1,8 @@
 import { isStale, resolveKernel, sessionKey, type Cell, type Runbook, type ShellChoice } from '@runtpt/core'
 import type { RunRecording } from '@runtpt/format'
-import { Markdown } from '../ui/Markdown.js'
+import { useMemo } from 'react'
+import { Markdown, type ChecklistView } from '../ui/Markdown.js'
+import { buildChecklistIndex, lineIndexOf } from './checklist.js'
 import { CellView } from './CellView.js'
 import type { Runner } from './useRunner.js'
 
@@ -25,6 +27,26 @@ export function RunbookView({
   onFocus,
   onRunCell,
 }: Props) {
+  const prose = useMemo(
+    () => runbook.blocks.map((block) => (block.kind === 'prose' ? block.markdown : '')),
+    [runbook],
+  )
+  const checklist = useMemo(() => buildChecklistIndex(prose).byBlock.map(lineIndexOf), [prose])
+
+  // Stable per block, so moving the focus does not re-parse the whole document.
+  const views = useMemo<ChecklistView[]>(
+    () =>
+      checklist.map((byLine) => ({
+        itemAt: (line) => byLine.get(line),
+        // The document's own `[x]` is the starting point until the operator touches it.
+        checked: (item) => runner.checks[item.id]?.checked ?? item.checked,
+        at: (item) => runner.checks[item.id]?.at,
+        readOnly: false,
+        onToggle: (item, checked) => runner.toggleCheck(item.id, item.text, checked),
+      })),
+    [checklist, runner.checks, runner.toggleCheck],
+  )
+
   return (
     <article className="document">
       {runbook.diagnostics.length > 0 && (
@@ -43,7 +65,7 @@ export function RunbookView({
       )}
 
       {runbook.blocks.map((block, index) => {
-        if (block.kind === 'prose') return <Markdown key={index} text={block.markdown} />
+        if (block.kind === 'prose') return <Markdown key={index} text={prose[index]!} checklist={views[index]} />
         if (block.kind !== 'cell') return null
         const { cell } = block
         const state = runner.stateOf(cell.id)

@@ -182,3 +182,15 @@
 .exported-deck .slide {
   min-height: 100vh;
 }
+
+/* On a slide the image answers to the slide, not to the prose column. */
+.slide .md-image {
+  max-height: 62vh;
+  width: auto;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.slide .md-image-box {
+  font-size: clamp(14px, 1.2vw, 20px);
+}

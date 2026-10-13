@@ -11,7 +11,7 @@ import {
   type ResolvedKernel,
   type Runbook,
 } from '@runtpt/core'
-import { Redactor, RuntptWriter, type RunRecording } from '@runtpt/format'
+import { Redactor, RuntptWriter, type CheckRecord, type RunRecording } from '@runtpt/format'
 import type { CellStatus, HostInfo } from '@runtpt/protocol'
 import type { AgentApi } from '../agent/useAgent.js'
 import type { SessionApi } from '../session/useSession.js'
@@ -75,6 +75,9 @@ export interface Runner {
   confirmRequest: ConfirmRequest | null
   replayCell: (cell: Cell) => boolean
   addNote: (text: string, after?: string) => void
+  /** Final tick state per checklist item, for this run. */
+  checks: Record<string, CheckRecord>
+  toggleCheck: (id: string, text: string, checked: boolean) => void
   runtptText: string
   hasRecord: boolean
   reset: () => void
@@ -106,6 +109,7 @@ export function useRunner(
   const [confirmRequest, setConfirmRequest] = useState<ConfirmRequest | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [runtptText, setRuntptText] = useState('')
+  const [checks, setChecks] = useState<Record<string, CheckRecord>>({})
 
   const lines = useRef<string[]>([])
   const writer = useRef<RuntptWriter | null>(null)
@@ -123,6 +127,7 @@ export function useRunner(
     setParamsState(defaults)
     setParamsAnswered(runbook.settings.params.length === 0)
     setStates({})
+    setChecks({})
     lines.current = []
     writer.current = null
     redactor.current = new Redactor()
@@ -449,8 +454,22 @@ export function useRunner(
     [ensureWriter],
   )
 
+  // A procedure opens on prerequisite checks, so a tick must be recordable before
+  // the first cell runs; that is what opens the record.
+  const toggleCheck = useCallback(
+    (id: string, text: string, checked: boolean) => {
+      const at = new Date().toISOString()
+      setChecks((prev) => ({ ...prev, [id]: { t: 'check', id, text, checked, at } }))
+      const w = ensureWriter()
+      w?.check({ id, text, checked, at })
+      setRuntptText(lines.current.join('\n') + '\n')
+    },
+    [ensureWriter],
+  )
+
   const reset = useCallback(() => {
     setStates({})
+    setChecks({})
     lines.current = []
     writer.current = null
     setRuntptText('')
@@ -477,6 +496,8 @@ export function useRunner(
     confirmRequest,
     replayCell,
     addNote,
+    checks,
+    toggleCheck,
     runtptText,
     hasRecord: runtptText.length > 0,
     reset,

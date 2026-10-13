@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { parseRunbook, type Cell } from '@runtpt/core'
 import { readRuntpt, type RunRecording } from '@runtpt/format'
 import { useAgent } from './agent/useAgent.js'
+import { AssetProvider, useAssetContext } from './assets/context.js'
 import { AgentPanel } from './agent/AgentPanel.js'
 import { useGithub } from './github/useGithub.js'
 import { CommitDialog } from './github/CommitDialog.js'
@@ -39,6 +40,7 @@ export function App() {
 
   const runbook = useMemo(() => (doc ? parseRunbook(doc.text) : null), [doc])
   const runner = useRunner(runbook, doc?.source ?? null, agent, recording, session)
+  const assets = useAssetContext(doc.source, github.token, agent)
 
   const canRun = agent.status === 'paired'
   const paramsPending = runbook !== null && runbook.settings.params.length > 0 && !runner.paramsAnswered
@@ -275,14 +277,16 @@ export function App() {
 
   if (presenting && runbook) {
     return (
-      <Present
-        runbook={runbook}
-        runner={runner}
-        canRun={canRun}
-        canReplay={(cellId) => recording?.byId.has(cellId) ?? false}
-        onRun={runOne}
-        onExit={() => setPresenting(false)}
-      />
+      <AssetProvider value={assets}>
+        <Present
+          runbook={runbook}
+          runner={runner}
+          canRun={canRun}
+          canReplay={(cellId) => recording?.byId.has(cellId) ?? false}
+          onRun={runOne}
+          onExit={() => setPresenting(false)}
+        />
+      </AssetProvider>
     )
   }
 
@@ -296,201 +300,203 @@ export function App() {
       : 'No agent connected — only the agent knows which shells exist on this machine'
 
   return (
-    <div className="app">
-      <header className="topbar">
-        <span className="brand">runtpt</span>
-        <span className="doc-label" title={doc.source.label}>
-          {doc.source.label}
-          {!doc.source.writable && <span className="chip">read-only</span>}
-        </span>
+    <AssetProvider value={assets}>
+      <div className="app">
+        <header className="topbar">
+          <span className="brand">runtpt</span>
+          <span className="doc-label" title={doc.source.label}>
+            {doc.source.label}
+            {!doc.source.writable && <span className="chip">read-only</span>}
+          </span>
 
-        <span className="spacer" />
+          <span className="spacer" />
 
-        {runbook && view === 'run' && (
-          <span className="seg" aria-label="Inputs to this run">
-            {runbook.settings.params.length > 0 && (
-              <button className="small" onClick={() => openInputs('params')}>
-                Params {paramsPending ? '•' : ''}
+          {runbook && view === 'run' && (
+            <span className="seg" aria-label="Inputs to this run">
+              {runbook.settings.params.length > 0 && (
+                <button className="small" onClick={() => openInputs('params')}>
+                  Params {paramsPending ? '•' : ''}
+                </button>
+              )}
+              <button className="small" onClick={() => openInputs('vars')} title="Session environment variables (v)">
+                Vars {session.count > 0 && <span className="chip">{session.count}</span>}
               </button>
-            )}
-            <button className="small" onClick={() => openInputs('vars')} title="Session environment variables (v)">
-              Vars {session.count > 0 && <span className="chip">{session.count}</span>}
+            </span>
+          )}
+          {view === 'run' && (
+            <>
+              {runner.busy ? (
+                <button className="danger small" onClick={runner.cancel}>
+                  Stop
+                </button>
+              ) : (
+                <button className="primary small" onClick={startRunAll} disabled={!canRun}>
+                  Run all
+                </button>
+              )}
+              <button className="ghost small" onClick={() => setPresenting(true)}>
+                Present
+              </button>
+              <button className="ghost small" disabled={!runner.hasRecord} onClick={() => setPanel('save')}>
+                Save
+              </button>
+            </>
+          )}
+          {recording && (
+            <button className="ghost small" onClick={() => setView(view === 'replay' ? 'run' : 'replay')}>
+              {view === 'replay' ? 'Back to the runbook' : 'Replay'}
+            </button>
+          )}
+          <button className="ghost small" onClick={() => setPanel('open')}>
+            Open
+          </button>
+          <span className={`seg round ${agent.status}`}>
+            <button
+              className={`chip-button shell-chip ${agent.status === 'paired' ? '' : 'muted'}`}
+              title={shellTitle}
+              onClick={() => setPanel('shell')}
+            >
+              <span className="meta">shell</span>
+              {shellChoice.kernel}
+            </button>
+            <button className={`chip-button ${agent.status}`} onClick={() => setPanel('agent')}>
+              {agentLabel}
             </button>
           </span>
-        )}
-        {view === 'run' && (
-          <>
-            {runner.busy ? (
-              <button className="danger small" onClick={runner.cancel}>
-                Stop
-              </button>
-            ) : (
-              <button className="primary small" onClick={startRunAll} disabled={!canRun}>
-                Run all
-              </button>
-            )}
-            <button className="ghost small" onClick={() => setPresenting(true)}>
-              Present
+          <button className="chip-button" onClick={() => setPanel('signin')}>
+            {github.user ? github.user.login : 'sign in'}
+          </button>
+          <button className="ghost small" onClick={() => setPanel('shortcuts')} aria-label="Keyboard shortcuts">
+            ?
+          </button>
+        </header>
+
+        {agent.status !== 'paired' && view === 'run' && (
+          <div className="banner">
+            <span>
+              No agent is connected, so nothing can run. Start one with <code>npx @runtpt/agent serve</code>.
+            </span>
+            <button className="primary small" onClick={() => setPanel('agent')}>
+              Pair an agent
             </button>
-            <button className="ghost small" disabled={!runner.hasRecord} onClick={() => setPanel('save')}>
-              Save
+          </div>
+        )}
+
+        {runner.error && <div className="banner error-banner">{runner.error}</div>}
+        {toast && <div className="banner error-banner">{toast}</div>}
+
+        {runner.confirmRequest && (
+          <div className="banner confirm-banner">
+            <span>
+              <strong>{runner.confirmRequest.cell.attrs.name ?? runner.confirmRequest.cell.id}</strong> asks for a
+              confirmation:
+              <code className="inline-source">{runner.confirmRequest.resolved.split('\n')[0]}</code>
+            </span>
+            <button className="ghost small" onClick={() => runner.confirmRequest?.decide(false)}>
+              Skip
             </button>
-          </>
+            <button className="primary small" onClick={() => runner.confirmRequest?.decide(true)}>
+              Run it
+            </button>
+          </div>
         )}
-        {recording && (
-          <button className="ghost small" onClick={() => setView(view === 'replay' ? 'run' : 'replay')}>
-            {view === 'replay' ? 'Back to the runbook' : 'Replay'}
-          </button>
-        )}
-        <button className="ghost small" onClick={() => setPanel('open')}>
-          Open
-        </button>
-        <span className={`seg round ${agent.status}`}>
-          <button
-            className={`chip-button shell-chip ${agent.status === 'paired' ? '' : 'muted'}`}
-            title={shellTitle}
-            onClick={() => setPanel('shell')}
-          >
-            <span className="meta">shell</span>
-            {shellChoice.kernel}
-          </button>
-          <button className={`chip-button ${agent.status}`} onClick={() => setPanel('agent')}>
-            {agentLabel}
-          </button>
-        </span>
-        <button className="chip-button" onClick={() => setPanel('signin')}>
-          {github.user ? github.user.login : 'sign in'}
-        </button>
-        <button className="ghost small" onClick={() => setPanel('shortcuts')} aria-label="Keyboard shortcuts">
-          ?
-        </button>
-      </header>
 
-      {agent.status !== 'paired' && view === 'run' && (
-        <div className="banner">
-          <span>
-            No agent is connected, so nothing can run. Start one with <code>npx @runtpt/agent serve</code>.
-          </span>
-          <button className="primary small" onClick={() => setPanel('agent')}>
-            Pair an agent
-          </button>
-        </div>
-      )}
+        <main className="page">
+          {view === 'replay' && recording ? (
+            <ReplayView
+              recording={recording}
+              runbook={recordedRunbook}
+              label={recordingLabel}
+              onLoadRunbook={canLoadRecordedRunbook ? () => void loadRecordedRunbook() : undefined}
+            />
+          ) : runbook ? (
+            <RunbookView
+              runbook={runbook}
+              runner={runner}
+              recording={recording}
+              canRun={canRun}
+              shellOverride={session.shellOverride}
+              focusedId={focusedId}
+              onFocus={setFocusedId}
+              onRunCell={runOne}
+            />
+          ) : null}
+        </main>
 
-      {runner.error && <div className="banner error-banner">{runner.error}</div>}
-      {toast && <div className="banner error-banner">{toast}</div>}
-
-      {runner.confirmRequest && (
-        <div className="banner confirm-banner">
-          <span>
-            <strong>{runner.confirmRequest.cell.attrs.name ?? runner.confirmRequest.cell.id}</strong> asks for a
-            confirmation:
-            <code className="inline-source">{runner.confirmRequest.resolved.split('\n')[0]}</code>
-          </span>
-          <button className="ghost small" onClick={() => runner.confirmRequest?.decide(false)}>
-            Skip
-          </button>
-          <button className="primary small" onClick={() => runner.confirmRequest?.decide(true)}>
-            Run it
-          </button>
-        </div>
-      )}
-
-      <main className="page">
-        {view === 'replay' && recording ? (
-          <ReplayView
-            recording={recording}
-            runbook={recordedRunbook}
-            label={recordingLabel}
-            onLoadRunbook={canLoadRecordedRunbook ? () => void loadRecordedRunbook() : undefined}
+        {(panel === 'open' || panel === 'signin') && (
+          <OpenPanel
+            github={github}
+            agent={agent}
+            onOpen={openDoc}
+            onOpenRecording={openRecording}
+            onClose={() => setPanel(null)}
+            {...(panel === 'signin' ? { initialTab: 'github' as const } : {})}
           />
-        ) : runbook ? (
-          <RunbookView
+        )}
+        {panel === 'agent' && <AgentPanel agent={agent} onClose={() => setPanel(null)} />}
+        {panel === 'shell' && (
+          <ShellPanel
+            settings={runbook?.settings ?? null}
+            agent={agent}
+            session={session}
+            onClose={() => setPanel(null)}
+            onPair={() => setPanel('agent')}
+          />
+        )}
+        {panel === 'inputs' && runbook && (
+          <InputsPanel
             runbook={runbook}
             runner={runner}
-            recording={recording}
-            canRun={canRun}
-            shellOverride={session.shellOverride}
-            focusedId={focusedId}
-            onFocus={setFocusedId}
-            onRunCell={runOne}
+            session={session}
+            initialTab={inputsTab}
+            onClose={() => {
+              // Backing out of the modal abandons the run that opened it.
+              resumeAfterParams.current = null
+              setPanel(null)
+            }}
+            onConfirm={() => {
+              setPanel(null)
+              const resume = resumeAfterParams.current
+              resumeAfterParams.current = null
+              resume?.()
+            }}
           />
-        ) : null}
-      </main>
-
-      {(panel === 'open' || panel === 'signin') && (
-        <OpenPanel
-          github={github}
-          agent={agent}
-          onOpen={openDoc}
-          onOpenRecording={openRecording}
-          onClose={() => setPanel(null)}
-          {...(panel === 'signin' ? { initialTab: 'github' as const } : {})}
-        />
-      )}
-      {panel === 'agent' && <AgentPanel agent={agent} onClose={() => setPanel(null)} />}
-      {panel === 'shell' && (
-        <ShellPanel
-          settings={runbook?.settings ?? null}
-          agent={agent}
-          session={session}
-          onClose={() => setPanel(null)}
-          onPair={() => setPanel('agent')}
-        />
-      )}
-      {panel === 'inputs' && runbook && (
-        <InputsPanel
-          runbook={runbook}
-          runner={runner}
-          session={session}
-          initialTab={inputsTab}
-          onClose={() => {
-            // Backing out of the modal abandons the run that opened it.
-            resumeAfterParams.current = null
-            setPanel(null)
-          }}
-          onConfirm={() => {
-            setPanel(null)
-            const resume = resumeAfterParams.current
-            resumeAfterParams.current = null
-            resume?.()
-          }}
-        />
-      )}
-      {panel === 'review' && runbook && (
-        <ReviewPanel
-          runbook={runbook}
-          runner={runner}
-          origin={doc.source.label}
-          shellOverride={session.shellOverride}
-          onClose={() => setPanel(null)}
-          onConfirm={() => {
-            setPanel(null)
-            void runner.runAll()
-          }}
-        />
-      )}
-      {panel === 'save' && (
-        <SavePanel
-          source={doc.source}
-          runtpt={runner.runtptText}
-          agent={agent}
-          canCommit={Boolean(github.token && doc.source.repo)}
-          onCommit={() => setPanel('commit')}
-          onNote={(text) => runner.addNote(text, focusedId ?? undefined)}
-          onClose={() => setPanel(null)}
-        />
-      )}
-      {panel === 'commit' && github.token && (
-        <CommitDialog
-          source={doc.source}
-          token={github.token}
-          markdown={doc.text}
-          runtpt={runner.runtptText}
-          onClose={() => setPanel(null)}
-        />
-      )}
-      {panel === 'shortcuts' && <Shortcuts onClose={() => setPanel(null)} />}
-    </div>
+        )}
+        {panel === 'review' && runbook && (
+          <ReviewPanel
+            runbook={runbook}
+            runner={runner}
+            origin={doc.source.label}
+            shellOverride={session.shellOverride}
+            onClose={() => setPanel(null)}
+            onConfirm={() => {
+              setPanel(null)
+              void runner.runAll()
+            }}
+          />
+        )}
+        {panel === 'save' && (
+          <SavePanel
+            source={doc.source}
+            runtpt={runner.runtptText}
+            agent={agent}
+            canCommit={Boolean(github.token && doc.source.repo)}
+            onCommit={() => setPanel('commit')}
+            onNote={(text) => runner.addNote(text, focusedId ?? undefined)}
+            onClose={() => setPanel(null)}
+          />
+        )}
+        {panel === 'commit' && github.token && (
+          <CommitDialog
+            source={doc.source}
+            token={github.token}
+            markdown={doc.text}
+            runtpt={runner.runtptText}
+            onClose={() => setPanel(null)}
+          />
+        )}
+        {panel === 'shortcuts' && <Shortcuts onClose={() => setPanel(null)} />}
+      </div>
+    </AssetProvider>
   )
 }

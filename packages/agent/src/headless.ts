@@ -37,6 +37,15 @@ export interface HeadlessResult {
   exitCode: number
 }
 
+/**
+ * Relative to where the operator actually typed the command, not to the kernel
+ * working directory — anchoring on the latter printed paths like `../../../tmp/x`.
+ */
+function displayPath(target: string): string {
+  const relative = path.relative(process.cwd(), target)
+  return relative === '' || relative.startsWith('..') ? target : relative
+}
+
 export async function runHeadless(opts: HeadlessOptions): Promise<HeadlessResult> {
   const log = opts.log ?? ((line: string) => process.stderr.write(line + '\n'))
   const runbookPath = path.resolve(opts.runbookPath)
@@ -167,7 +176,7 @@ export async function runHeadless(opts: HeadlessOptions): Promise<HeadlessResult
   const exitCode = summary.failed > 0 ? 1 : 0
   log(
     `runtpt: ${summary.ok} ok, ${summary.failed} failed, ${summary.tolerated} tolerated, ` +
-    `${summary.skipped} skipped → ${path.relative(base, outPath) || outPath}`,
+    `${summary.skipped} skipped → ${displayPath(outPath)}`,
   )
   emit({
     event: 'done',
