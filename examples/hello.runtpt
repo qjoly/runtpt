@@ -1,0 +1,6 @@
+{"t":"header","v":1,"runbook":{"path":"examples/hello.md","sha":"9f1cde0a","repo":"qjoly/runtpt","ref":"main"},"run":{"id":"01JBQ7","started":"2026-10-13T09:12:04Z","params":{"CLUSTER":"staging"}},"host":{"name":"mocha-jump","os":"linux","arch":"amd64","agent":"runtpt-agent/0.1.0","cwd":"/home/qjoly/ops"}}
+{"t":"cell","id":"check-nodes","hash":"sha256:ab12","kernel":"bash","source":"kubectl --context staging get nodes","started":"2026-10-13T09:12:05Z","seq":1}
+{"t":"out","id":"check-nodes","seq":2,"stream":"stdout","at":"2026-10-13T09:12:05.214Z","data":"NAME     STATUS   ROLES    AGE\nnode-1   Ready    worker   41d\nnode-2   Ready    worker   41d\n"}
+{"t":"result","id":"check-nodes","seq":3,"status":"ok","exit":0,"duration_ms":842,"ended":"2026-10-13T09:12:06Z"}
+{"t":"note","at":"2026-10-13T09:12:30Z","after":"check-nodes","text":"node-3 is drained on purpose since Friday"}
+{"t":"footer","ended":"2026-10-13T09:12:41Z","status":"ok","cells":{"ok":3,"failed":0,"skipped":0}}
