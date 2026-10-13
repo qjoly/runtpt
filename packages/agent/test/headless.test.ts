@@ -110,11 +110,14 @@ describeShell('runHeadless', () => {
     expect(recording.byId.get('expected-failure')?.exit).toBe(3)
     expect(recording.byId.get('never-runs')?.status).toBe('skipped')
     expect(recording.byId.get('never-runs')?.outputs).toEqual([])
-    // Chunk boundaries are a timing artefact; only the order of the streams matters.
-    const streams = (recording.byId.get('streams')?.outputs ?? [])
-      .map((o) => o.stream)
-      .filter((s, i, all) => s !== all[i - 1])
-    expect(streams).toEqual(['stdout', 'stderr'])
+    // stdout and stderr are independent pipes: their relative arrival order is not
+    // guaranteed and asserting it made this test flake under load. What the agent
+    // does promise is that each stream is captured, whole and unmixed.
+    const outputs = recording.byId.get('streams')?.outputs ?? []
+    const textOf = (stream: 'stdout' | 'stderr'): string =>
+      outputs.filter((o) => o.stream === stream).map((o) => o.data).join('')
+    expect(textOf('stdout')).toBe('to stdout\n')
+    expect(textOf('stderr')).toBe('to stderr\n')
     expect(recording.byId.get('alias-check')?.status).toBe('ok')
     expect(recording.byId.get('alias-state')?.kernel).toBe('bash')
   })
