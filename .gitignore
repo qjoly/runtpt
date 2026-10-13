@@ -1,4 +1,5 @@
 node_modules/
 dist/
 *.tsbuildinfo
+packages/agent/src/web-assets.ts
 .DS_Store

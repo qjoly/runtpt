@@ -26,6 +26,12 @@ The browser holds the document and the UI. The agent holds the processes and the
 No runtpt server holds anything: the only server-side code is a stateless function that
 trades an OAuth code for a token, because GitHub will not do that from a public client.
 
+The agent also **serves the web app itself**, over HTTP on the same loopback port as the
+WebSocket. The standalone binary therefore carries the whole product: `runtpt serve`,
+open `http://127.0.0.1:7777`, done — no checkout, no Node, no third party. Without it the
+distributed artifact had no UI at all, and the link the agent printed pointed at a
+development server that only exists in a source tree.
+
 ## Packages
 
 | Package | Role |

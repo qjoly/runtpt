@@ -15,6 +15,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+        # A generated module, so it is not in the repository: make it first.
+      - run: node scripts/embed-web.mjs
       - run: npx tsc -b
       - run: npm test
       - run: npm run build --workspaces --if-present
@@ -29,5 +31,6 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - run: node scripts/embed-web.mjs
       - run: npm run build --workspaces --if-present
       - run: node packages/agent/dist/cli.js run examples/selftest.md --out /tmp/selftest.runtpt

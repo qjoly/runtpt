@@ -1,5 +1,6 @@
 import { mkdirSync, mkdtempSync, writeFileSync, readFileSync } from 'node:fs'
 import os from 'node:os'
+import { gzipSync } from 'node:zlib'
 import path from 'node:path'
 import { PROTOCOL_VERSION, type ClientMessage, type ServerMessage } from '@runtpt/protocol'
 import { WebSocket } from 'ws'
@@ -224,6 +225,33 @@ describeShell('AgentServer', () => {
       const asset = await client.wait('asset')
       client.close()
       expect(asset.mime).toBe('application/octet-stream')
+    })
+  })
+
+  describe('one port for both', () => {
+    const INDEX = {
+      '/index.html': {
+        mime: 'text/html; charset=utf-8',
+        gzip: gzipSync(Buffer.from('<!doctype html><title>runtpt</title>')).toString('base64'),
+      },
+    }
+
+    it('still pairs over the websocket while the same port serves the UI', async () => {
+      const web = new AgentServer({ port: 0, root, assets: INDEX })
+      await web.start()
+      try {
+        const origin = `http://127.0.0.1:${web.port}`
+        const res = await fetch(`${origin}/`)
+        expect(res.status).toBe(200)
+        expect(await res.text()).toContain('<title>runtpt</title>')
+
+        const client = await Client.connect(web.port, origin)
+        client.send({ t: 'hello', v: PROTOCOL_VERSION, pairing: web.pairing, client: 'test' })
+        expect((await client.wait('welcome')).v).toBe(PROTOCOL_VERSION)
+        client.close()
+      } finally {
+        await web.close()
+      }
     })
   })
 })

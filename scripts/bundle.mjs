@@ -8,7 +8,7 @@
  *   node scripts/bundle.mjs --target <t>    one named target
  */
 import { execFileSync } from 'node:child_process'
-import { mkdirSync, readFileSync, rmSync } from 'node:fs'
+import { mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { parseArgs } from 'node:util'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -33,6 +33,15 @@ function hostTarget() {
   return found
 }
 
+const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
+
+/** The binary is useless without the UI, so the web build is part of bundling. */
+function prepare() {
+  execFileSync(npm, ['run', 'build', '-w', '@runtpt/web'], { stdio: 'inherit', cwd: root })
+  execFileSync(process.execPath, [path.join(root, 'scripts/embed-web.mjs')], { stdio: 'inherit', cwd: root })
+  execFileSync(npm, ['run', 'build', '-w', '@runtpt/agent'], { stdio: 'inherit', cwd: root })
+}
+
 function build(target, version) {
   const binary = path.join(outDir, target.triple, 'runtpt')
   mkdirSync(path.dirname(binary), { recursive: true })
@@ -41,6 +50,7 @@ function build(target, version) {
     ['build', '--compile', `--target=${target.bun}`, entry, '--outfile', binary],
     { stdio: 'inherit', cwd: root },
   )
+  console.log(`  ${path.relative(root, binary)}  ${(statSync(binary).size / 1024 / 1024).toFixed(1)} MB`)
 
   const archive = path.join(outDir, `runtpt-${version}-${target.triple}.tar.gz`)
   execFileSync('tar', ['-czf', archive, '-C', path.dirname(binary), 'runtpt'], { stdio: 'inherit' })
@@ -69,4 +79,5 @@ else if (values.target) {
 rmSync(outDir, { recursive: true, force: true })
 mkdirSync(outDir, { recursive: true })
 console.log(`runtpt ${version} — building ${targets.length} target(s)`)
+prepare()
 for (const target of targets) build(target, version)

@@ -1,7 +1,9 @@
 import { randomBytes } from 'node:crypto'
 import { promises as fs } from 'node:fs'
+import http from 'node:http'
 import os from 'node:os'
 import path from 'node:path'
+import { gunzipSync } from 'node:zlib'
 import { Redactor } from '@runtpt/format'
 import {
   DEFAULT_AGENT_PORT,
@@ -16,6 +18,7 @@ import { WebSocketServer, type WebSocket } from 'ws'
 import { detectKernels } from './kernels/detect.js'
 import { KernelPool, type KernelTarget } from './pool.js'
 import { relativeToRoot, resolveInRoot } from './paths.js'
+import { WEB_ASSETS, type EmbeddedAsset } from './web-assets.js'
 
 export const AGENT_VERSION = '0.2.3'
 const PAIRING_TIMEOUT_MS = 10_000
@@ -27,6 +30,95 @@ export interface ServerOptions {
   origins?: string[]
   pairing?: string
   env?: Record<string, string>
+  /** Overrides the compiled-in web app; tests inject a tiny map here. */
+  assets?: Record<string, EmbeddedAsset>
+}
+
+export function hasEmbeddedWeb(): boolean {
+  return Object.keys(WEB_ASSETS).length > 0
+}
+
+const NO_WEB_BODY =
+  'This runtpt binary was built without the embedded web app.\n' +
+  'Run `runtpt serve --web <url>` to point at a web app you host yourself.\n'
+
+const IMMUTABLE_PREFIX = '/assets/'
+
+/** Serves the embedded single-page app: no filesystem, no CORS, same origin as the socket. */
+export class WebHandler {
+  private readonly plain = new Map<string, Buffer>()
+  private readonly packed = new Map<string, Buffer>()
+
+  constructor(private readonly assets: Record<string, EmbeddedAsset> = WEB_ASSETS) {}
+
+  get empty(): boolean {
+    return Object.keys(this.assets).length === 0
+  }
+
+  handle(req: http.IncomingMessage, res: http.ServerResponse): void {
+    res.setHeader('X-Content-Type-Options', 'nosniff')
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      res.writeHead(405, { 'Content-Type': 'text/plain; charset=utf-8', Allow: 'GET, HEAD' })
+      res.end('method not allowed\n')
+      return
+    }
+    if (this.empty) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' })
+      res.end(req.method === 'HEAD' ? undefined : NO_WEB_BODY)
+      return
+    }
+
+    const url = resolveAssetPath(req.url ?? '/', this.assets)
+    const asset = url ? this.assets[url] : undefined
+    if (!url || !asset) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' })
+      res.end(req.method === 'HEAD' ? undefined : 'not found\n')
+      return
+    }
+
+    const gzip = /\bgzip\b/.test(String(req.headers['accept-encoding'] ?? ''))
+    const body = gzip ? this.gzipped(url, asset) : this.decoded(url, asset)
+    res.writeHead(200, {
+      'Content-Type': asset.mime,
+      'Content-Length': body.length,
+      'Cache-Control': url.startsWith(IMMUTABLE_PREFIX) ? 'public, max-age=31536000, immutable' : 'no-store',
+      ...(gzip ? { 'Content-Encoding': 'gzip', Vary: 'Accept-Encoding' } : { Vary: 'Accept-Encoding' }),
+    })
+    res.end(req.method === 'HEAD' ? undefined : body)
+  }
+
+  private gzipped(url: string, asset: EmbeddedAsset): Buffer {
+    let buf = this.packed.get(url)
+    if (!buf) {
+      buf = Buffer.from(asset.gzip, 'base64')
+      this.packed.set(url, buf)
+    }
+    return buf
+  }
+
+  private decoded(url: string, asset: EmbeddedAsset): Buffer {
+    let buf = this.plain.get(url)
+    if (!buf) {
+      buf = gunzipSync(this.gzipped(url, asset))
+      this.plain.set(url, buf)
+    }
+    return buf
+  }
+}
+
+/** Maps a request path to an embedded key, falling back to the SPA shell for routes. */
+export function resolveAssetPath(requestUrl: string, assets: Record<string, EmbeddedAsset>): string | null {
+  let pathname: string
+  try {
+    pathname = decodeURIComponent(new URL(requestUrl, 'http://127.0.0.1').pathname)
+  } catch {
+    return null
+  }
+  if (pathname === '/' || pathname === '') return '/index.html'
+  if (assets[pathname]) return pathname
+  // A path that names a file is a miss, not a route: never hand it index.html.
+  if (path.extname(pathname) !== '') return null
+  return '/index.html'
 }
 
 export function generatePairingCode(): string {
@@ -93,12 +185,15 @@ export class AgentServer {
   private readonly redactor = new Redactor()
   private readonly pool: KernelPool
   private wss: WebSocketServer | null = null
+  private http: http.Server | null = null
+  private readonly web: WebHandler
   private boundPort = 0
 
   constructor(private readonly opts: ServerOptions = {}) {
     this.pairing = opts.pairing ?? generatePairingCode()
     this.root = path.resolve(opts.root ?? process.cwd())
     this.origins = opts.origins ?? []
+    this.web = new WebHandler(opts.assets ?? WEB_ASSETS)
     this.pool = new KernelPool({ cwd: this.root, ...(opts.env ? { env: opts.env } : {}) })
   }
 
@@ -106,18 +201,28 @@ export class AgentServer {
     return this.boundPort
   }
 
+  /** Serves the UI itself; the browser talks to one loopback port for both. */
+  get webEmbedded(): boolean {
+    return !this.web.empty
+  }
+
   async start(): Promise<number> {
-    const wss = new WebSocketServer({ host: '127.0.0.1', port: this.opts.port ?? DEFAULT_AGENT_PORT })
-    this.wss = wss
+    const requested = this.opts.port ?? DEFAULT_AGENT_PORT
+    const server = http.createServer((req, res) => this.web.handle(req, res))
+    this.http = server
     await new Promise<void>((resolve, reject) => {
-      wss.once('listening', resolve)
-      wss.once('error', reject)
+      server.once('listening', resolve)
+      server.once('error', reject)
+      server.listen(requested, '127.0.0.1')
     })
-    const address = wss.address()
-    this.boundPort = typeof address === 'object' && address ? address.port : (this.opts.port ?? DEFAULT_AGENT_PORT)
+    const address = server.address()
+    this.boundPort = typeof address === 'object' && address ? address.port : requested
+
+    const wss = new WebSocketServer({ server })
+    this.wss = wss
 
     wss.on('connection', (ws, req) => {
-      if (!isOriginAllowed(req.headers.origin, this.origins)) {
+      if (!isOriginAllowed(req.headers.origin, this.selfOrigins())) {
         send(ws, { t: 'denied', reason: 'origin', message: `origin "${req.headers.origin}" is not allowed` })
         ws.close()
         return
@@ -125,6 +230,11 @@ export class AgentServer {
       this.attach(ws)
     })
     return this.boundPort
+  }
+
+  /** The page is served from this port now, so its own origin is always allowed. */
+  private selfOrigins(): string[] {
+    return [...this.origins, `http://127.0.0.1:${this.boundPort}`, `http://localhost:${this.boundPort}`]
   }
 
   private attach(ws: WebSocket): void {
@@ -426,10 +536,17 @@ export class AgentServer {
   async close(): Promise<void> {
     this.pool.disposeAll()
     const wss = this.wss
+    const server = this.http
     this.wss = null
-    if (!wss) return
-    for (const client of wss.clients) client.terminate()
-    await new Promise<void>((resolve) => wss.close(() => resolve()))
+    this.http = null
+    if (wss) {
+      for (const client of wss.clients) client.terminate()
+      await new Promise<void>((resolve) => wss.close(() => resolve()))
+    }
+    if (server) {
+      server.closeAllConnections()
+      await new Promise<void>((resolve) => server.close(() => resolve()))
+    }
   }
 }
 

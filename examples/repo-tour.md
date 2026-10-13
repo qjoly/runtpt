@@ -13,9 +13,10 @@ Every command here only reads. Run them in order — each one narrows the next.
 ## Where am I?
 
 ```bash
-cd "$(git rev-parse --show-toplevel)" && pwd
+root=$(git rev-parse --show-toplevel) && cd "$root" && pwd
 ```
 
+If that failed, you are not inside a git repository and nothing below will work.
 The rest of this runbook assumes that directory. The next cell runs in the same
 shell, so it is still there — that is the point of a runbook rather than a list
 of snippets.

@@ -11,7 +11,7 @@ const USAGE = `runtpt ${AGENT_VERSION}
     --port <n>        default ${DEFAULT_AGENT_PORT}
     --root <dir>      directory the agent is allowed to read and write (default: cwd)
     --origin <url>    extra allowed browser origin (repeatable)
-    --web <url>       web app base URL (default: http://localhost:5173)
+    --web <url>       serve the UI from this URL instead of the built-in one
     --no-open         do not print the ready-to-click URL
 
   runtpt run <runbook.md> [options] headless run, writes a .runtpt
@@ -84,8 +84,15 @@ async function serve(argv: string[]): Promise<number> {
   }
 
   const ws = `ws://127.0.0.1:${server.port}`
-  const web = (values.web ?? 'http://localhost:5173').replace(/\/+$/, '')
-  const link = `${web}/#agent=${encodeURIComponent(ws)}&pairing=${encodeURIComponent(server.pairing)}`
+  const self = `http://127.0.0.1:${server.port}`
+  const builtIn = server.webEmbedded && !values.web
+  const web = builtIn ? self : (values.web ?? 'http://localhost:5173').replace(/\/+$/, '')
+  // The page we serve derives the socket from its own origin; a UI hosted
+  // elsewhere cannot, so it gets told explicitly.
+  const link =
+    `${web}/#` +
+    (builtIn ? '' : `agent=${encodeURIComponent(ws)}&`) +
+    `pairing=${encodeURIComponent(server.pairing)}`
 
   const lines = [
     '',
@@ -97,6 +104,9 @@ async function serve(argv: string[]): Promise<number> {
     '',
   ]
   if (values.open) lines.push(`  open      ${link}`, '')
+  if (!server.webEmbedded) {
+    lines.push('  This build has no embedded UI: the link above points at a web app you host.', '')
+  }
   lines.push('  Ctrl-C to stop. Cells run as you, in the directory above.', '')
   process.stdout.write(lines.join('\n'))
 

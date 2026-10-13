@@ -19,14 +19,18 @@ description = "Build every package"
 depends = ["install"]
 run = "npm run build --workspaces --if-present"
 
+[tasks.embed]
+description = "Generate the embedded web assets module"
+run = "node scripts/embed-web.mjs"
+
 [tasks.typecheck]
 description = "Typecheck the whole workspace"
-depends = ["install"]
+depends = ["install", "embed"]
 run = "npx tsc -b"
 
 [tasks.test]
 description = "Run the test suite"
-depends = ["install"]
+depends = ["install", "embed"]
 run = "npx vitest run"
 
 [tasks.check]

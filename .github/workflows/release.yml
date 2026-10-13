@@ -42,6 +42,20 @@ jobs:
           /tmp/runtpt --version
           /tmp/runtpt run examples/selftest.md --out /tmp/from-binary.runtpt
 
+      # A release that ships no UI is a dead link for everyone who installs it.
+      - name: Check the binary serves the web app
+        run: |
+          /tmp/runtpt serve --port 7799 --root /tmp &
+          agent=$!
+          trap 'kill $agent' EXIT
+          for _ in $(seq 1 30); do
+            curl -fsS -o /tmp/index.html http://127.0.0.1:7799/ && break
+            sleep 1
+          done
+          code=$(curl -s -o /tmp/index.html -w '%{http_code}' http://127.0.0.1:7799/)
+          test "$code" = "200"
+          grep -qi '<html' /tmp/index.html
+
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}

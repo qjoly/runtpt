@@ -2,17 +2,23 @@
   "name": "runtpt-monorepo",
   "private": true,
   "type": "module",
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "test": "vitest run",
     "typecheck": "tsc -b",
-    "dev": "npm run dev -w @runtpt/web"
+    "dev": "npm run dev -w @runtpt/web",
+    "embed": "node scripts/embed-web.mjs",
+    "prepare": "node scripts/embed-web.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.0",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }

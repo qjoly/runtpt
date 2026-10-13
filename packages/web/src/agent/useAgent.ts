@@ -51,7 +51,21 @@ export interface AgentApi {
   subscribe: (fn: (event: AgentEvent) => void) => () => void
 }
 
-const DEFAULT_URL = `ws://127.0.0.1:${DEFAULT_AGENT_PORT}`
+/**
+ * The agent serves this page, so its socket is on the page's own origin. Falling
+ * back to the well-known port only helps the dev server, which is served from
+ * somewhere else entirely.
+ */
+function defaultSocketUrl(): string {
+  if (typeof window === 'undefined') return `ws://127.0.0.1:${DEFAULT_AGENT_PORT}`
+  const { protocol, hostname, port } = window.location
+  const scheme = protocol === 'https:' ? 'wss:' : 'ws:'
+  // A page from the Vite dev server is not the agent; guess the usual port there.
+  const target = port === '' || port === '5173' ? String(DEFAULT_AGENT_PORT) : port
+  return `${scheme}//${hostname}:${target}`
+}
+
+const DEFAULT_URL = defaultSocketUrl()
 const STORED_PAIRING = 'runtpt.agent'
 
 interface Pending {

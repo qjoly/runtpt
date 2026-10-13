@@ -198,6 +198,9 @@ slide itself. The run is recorded, so the demo can be replayed later even offlin
 ### 7.6 Agent
 
 - `FR-G1` Single command to start, no configuration file required for the default case.
+- `FR-G6` The agent serves the web app from the same loopback port it listens on, so the
+  standalone binary is the whole product. An installed agent that tells the operator to
+  open a development server they do not have is not an installation.
 - `FR-G2` Pairing is explicit: a short code typed or auto-filled, bound to one browser
   session, expiring.
 - `FR-G3` The agent exposes its hostname, OS, working directory and detected kernels.
