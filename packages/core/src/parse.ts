@@ -131,7 +131,9 @@ function readSettings(fm: Record<string, unknown> | null, diagnostics: Diagnosti
     const theme = asString(p.theme)
     if (theme) settings.presentation.theme = theme
     const slides = asString(p.slides)
-    if (slides === 'hr' || slides === 'h1' || slides === 'h2') settings.presentation.slides = slides
+    if (slides === 'auto' || slides === 'hr' || slides === 'h1' || slides === 'h2') {
+      settings.presentation.slides = slides
+    }
     else if (slides) diagnostics.push({ level: 'warn', message: `Unknown slide mode "${slides}"` })
   }
 

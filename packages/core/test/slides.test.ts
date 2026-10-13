@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { buildSlides, parseRunbook, visibleBlocks } from '../src/index.js'
+import { buildSlides, parseRunbook, resolveSlideMode, visibleBlocks } from '../src/index.js'
 
 describe('buildSlides', () => {
   it('splits on thematic breaks by default', () => {
@@ -64,5 +64,49 @@ describe('visibleBlocks', () => {
     const slide = buildSlides(rb)[0]!
     expect(slide.blocks.filter((b) => b.kind === 'cell')).toHaveLength(2)
     expect(visibleBlocks(slide).filter((b) => b.kind === 'cell')).toHaveLength(1)
+  })
+})
+
+describe('auto slide mode', () => {
+  const modeOf = (doc: string) => resolveSlideMode(parseRunbook(doc))
+
+  it('prefers a divider, because it was written on purpose', () => {
+    expect(modeOf('a\n\n---\n\n## b\n\n## c\n')).toBe('hr')
+  })
+
+  it('falls back to the heading level that repeats', () => {
+    expect(modeOf('# Title\n\nintro\n\n## One\n\na\n\n## Two\n\nb\n')).toBe('h2')
+    expect(modeOf('# A\n\na\n\n# B\n\nb\n')).toBe('h1')
+  })
+
+  it('does not split a document with a single section', () => {
+    expect(buildSlides(parseRunbook('# Only\n\ntext\n'))).toHaveLength(1)
+  })
+
+  it('turns a document with headings and no divider into a deck', () => {
+    const slides = buildSlides(parseRunbook('# Title\n\nintro\n\n## One\n\na\n\n## Two\n\nb\n'))
+    expect(slides.map((s) => s.title)).toEqual([undefined, 'One', 'Two'])
+  })
+
+  it('still honours an explicit mode', () => {
+    expect(modeOf('---\nruntpt:\n  presentation:\n    slides: h1\n---\n\n## a\n\n## b\n')).toBe('h1')
+  })
+
+  // A yaml snippet left in the prose carries `---` of its own, and it used to
+  // cut the deck in three.
+  it('ignores a break inside a fenced snippet', () => {
+    const doc = '# P\n\nstep\n\n```yaml\n---\na: 1\n---\nb: 2\n```\n\ntext\n'
+    expect(modeOf(doc)).toBe('hr')
+    expect(buildSlides(parseRunbook(doc))).toHaveLength(1)
+  })
+
+  it('ignores a heading-looking comment inside a fenced snippet', () => {
+    const doc = '# P\n\n```text\n## not a section\n## nor this\n```\n\nprose\n'
+    expect(modeOf(doc)).toBe('hr')
+    expect(buildSlides(parseRunbook(doc))).toHaveLength(1)
+  })
+
+  it('counts a tilde-fenced snippet too', () => {
+    expect(modeOf('# P\n\n~~~yaml\n---\n~~~\n\ntext\n')).toBe('hr')
   })
 })

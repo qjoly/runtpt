@@ -190,7 +190,10 @@ slide itself. The run is recorded, so the demo can be replayed later even offlin
 
 ### 7.5 Presentation
 
-- `FR-P1` Slide boundaries: a `---` thematic break, or a configurable heading level.
+- `FR-P1` Slide boundaries: a `---` thematic break when the document has one, its
+  headings otherwise, or a level named explicitly. A document nobody wrote as a deck is
+  still a deck — its sections are its slides. Markers inside a fenced snippet belong to
+  the snippet.
 - `FR-P2` Speaker notes via `<!-- notes: ... -->`, invisible in run mode, visible in the
   speaker view.
 - `FR-P3` Presenter view: current slide, next slide, notes, timer, on a second window.

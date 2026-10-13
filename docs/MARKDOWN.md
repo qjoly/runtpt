@@ -181,8 +181,15 @@ Invisible everywhere except the presenter view.
 
 ## Slides
 
-With `slides: hr`, a `---` thematic break starts a new slide. With `slides: h2`, every
-`##` does. Cells keep working; a slide containing a cell gets a run affordance.
+By default (`slides: auto`) a `---` thematic break starts a new slide — someone typed it
+on purpose. A document with no break at all splits on its headings instead, preferring
+the level that actually repeats: a page with one `#` title and ten `##` sections becomes
+eleven slides. Force it with `slides: hr`, `h1` or `h2`.
+
+A break or a heading **inside a fenced snippet** is part of the snippet. A YAML document
+separator used to cut a deck in three.
+
+Cells keep working; a slide containing a cell gets a run affordance.
 
 ## Directives
 

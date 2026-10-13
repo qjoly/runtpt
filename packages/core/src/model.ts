@@ -88,9 +88,15 @@ export interface ParamSpec {
   options?: string[]
 }
 
+/**
+ * `auto` splits on thematic breaks when the document has any, and on headings
+ * otherwise: a document written as prose has sections, not slide markers.
+ */
+export type SlideMode = 'auto' | 'hr' | 'h1' | 'h2'
+
 export interface PresentationSettings {
   theme: string
-  slides: 'hr' | 'h1' | 'h2'
+  slides: SlideMode
 }
 
 /**
@@ -157,5 +163,5 @@ export const DEFAULT_SETTINGS: RuntptSettings = {
   env: {},
   interpreters: {},
   params: [],
-  presentation: { theme: 'default', slides: 'hr' },
+  presentation: { theme: 'default', slides: 'auto' },
 }
