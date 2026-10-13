@@ -23,6 +23,13 @@ export function RepoPicker({ token, onOpen, onOpenRecording }: Props) {
     listRepos(token).then(setRepos).catch((err: Error) => setError(err.message))
   }, [token])
 
+  // The same box filters repositories and then files. Typing a repository name
+  // to find it left that word filtering the file list, where it matches almost
+  // nothing: searching "runtpt" then opening qjoly/runtpt hid every .md.
+  useEffect(() => {
+    setFilter('')
+  }, [repo])
+
   useEffect(() => {
     if (!repo) return
     setRef(repo.default_branch)
