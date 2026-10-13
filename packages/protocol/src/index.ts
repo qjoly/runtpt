@@ -94,6 +94,21 @@ export interface RunMsg {
   interpreter?: string
 }
 
+/**
+ * Follow a file the browser has open. One subscription per `id`; the agent
+ * answers `watching`, then `changed` every time the file settles on disk.
+ */
+export interface WatchMsg {
+  t: 'watch'
+  id: string
+  path: string
+}
+
+export interface UnwatchMsg {
+  t: 'unwatch'
+  id: string
+}
+
 export interface CancelMsg {
   t: 'cancel'
   runId: string
@@ -132,6 +147,8 @@ export type ClientMessage =
   | StdinMsg
   | RestartMsg
   | RedactMsg
+  | WatchMsg
+  | UnwatchMsg
 
 /* ------------------------------------------------------------------ */
 /* Agent → browser                                                     */
@@ -186,6 +203,20 @@ export interface SavedMsg {
   t: 'saved'
   id: string
   path: string
+}
+
+export interface WatchingMsg {
+  t: 'watching'
+  id: string
+  path: string
+}
+
+/** The watched file settled on a new content. The browser decides what to do. */
+export interface ChangedMsg {
+  t: 'changed'
+  id: string
+  path: string
+  at: string
 }
 
 export interface ChunkMsg {
@@ -245,6 +276,8 @@ export type ServerMessage =
   | DocumentMsg
   | AssetMsg
   | SavedMsg
+  | WatchingMsg
+  | ChangedMsg
   | ChunkMsg
   | DisplayMsg
   | ResultMsg
@@ -257,6 +290,7 @@ export type ServerMessage =
 
 const CLIENT_TYPES = new Set([
   'hello', 'listDir', 'open', 'readAsset', 'save', 'run', 'cancel', 'stdin', 'restart', 'redact',
+  'watch', 'unwatch',
 ])
 
 export function parseClientMessage(raw: string): ClientMessage | null {

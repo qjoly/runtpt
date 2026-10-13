@@ -92,7 +92,7 @@ export function RunbookView({
             focused={focusedId === cell.id}
             canRun={canRun && !runner.busy}
             canReplay={recording?.byId.has(cell.id) ?? false}
-            stale={isStale(cell, recording?.byId.get(cell.id)?.hash)}
+            stale={state.stale === true || isStale(cell, recording?.byId.get(cell.id)?.hash)}
             {...(drift ? { ranUnder: drift } : {})}
             onFocus={() => onFocus(cell.id)}
             onRun={() => onRunCell(cell)}

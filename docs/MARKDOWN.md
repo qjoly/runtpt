@@ -90,6 +90,19 @@ mode, where it is what opts a fence in.
 | `interactive` | attach a terminal; the cell expects input |
 | `interpreter=/path` | run this cell with a specific binary |
 
+### Why you might want an explicit `id`
+
+Without one, a cell's identity *is* its content. That is what makes a recording
+reproducible, and it has one consequence worth knowing: **editing a cell makes it a
+different cell.** Reload the runbook and the old one is dropped while the edited one
+arrives empty, rather than the same cell being cleared.
+
+Give a cell an `id` and it keeps its identity across edits: a reload clears its output —
+the recorded output described different source — but it stays the same cell, in the same
+place, in the recording and in the view.
+
+For a step you expect to tweak during an intervention, name it.
+
 ### Kernels
 
 - `shell` — **the runbook's shell**, whatever `shell:` says, overridable for a session

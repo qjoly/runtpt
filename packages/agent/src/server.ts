@@ -18,6 +18,7 @@ import { WebSocketServer, type WebSocket } from 'ws'
 import { detectKernels } from './kernels/detect.js'
 import { KernelPool, type KernelTarget } from './pool.js'
 import { relativeToRoot, resolveInRoot } from './paths.js'
+import { WatchRegistry } from './watch.js'
 import { WEB_ASSETS, type EmbeddedAsset } from './web-assets.js'
 
 export const AGENT_VERSION = '0.3.0'
@@ -32,6 +33,8 @@ export interface ServerOptions {
   env?: Record<string, string>
   /** Overrides the compiled-in web app; tests inject a tiny map here. */
   assets?: Record<string, EmbeddedAsset>
+  /** Debounce for file-change notifications; tests shorten it. */
+  watchDebounceMs?: number
 }
 
 export function hasEmbeddedWeb(): boolean {
@@ -160,6 +163,7 @@ interface Connection {
   paired: boolean
   seq: number
   active: Map<string, KernelTarget>
+  watches: WatchRegistry
 }
 
 const MIME_BY_EXT: Record<string, string> = {
@@ -187,6 +191,7 @@ export class AgentServer {
   private wss: WebSocketServer | null = null
   private http: http.Server | null = null
   private readonly web: WebHandler
+  private readonly watchOptions: { debounceMs?: number }
   private boundPort = 0
 
   constructor(private readonly opts: ServerOptions = {}) {
@@ -195,6 +200,7 @@ export class AgentServer {
     this.origins = opts.origins ?? []
     this.web = new WebHandler(opts.assets ?? WEB_ASSETS)
     this.pool = new KernelPool({ cwd: this.root, ...(opts.env ? { env: opts.env } : {}) })
+    this.watchOptions = opts.watchDebounceMs === undefined ? {} : { debounceMs: opts.watchDebounceMs }
   }
 
   get port(): number {
@@ -238,7 +244,7 @@ export class AgentServer {
   }
 
   private attach(ws: WebSocket): void {
-    const conn: Connection = { ws, paired: false, seq: 0, active: new Map() }
+    const conn: Connection = { ws, paired: false, seq: 0, active: new Map(), watches: new WatchRegistry() }
     const timer = setTimeout(() => {
       if (conn.paired) return
       send(ws, { t: 'denied', reason: 'pairing', message: 'no valid hello within the pairing window' })
@@ -263,6 +269,7 @@ export class AgentServer {
       clearTimeout(timer)
       for (const [, target] of conn.active) this.pool.peek(target)?.cancel()
       conn.active.clear()
+      conn.watches.clear()
       // The shell outlives the tab; the variables the tab injected must not.
       this.redactor.clear()
       this.pool.clearInjectedEnv()
@@ -360,6 +367,22 @@ export class AgentServer {
         } catch (err) {
           send(conn.ws, { t: 'error', id: msg.id, message: `cannot save: ${(err as Error).message}` })
         }
+        return
+      }
+
+      case 'watch': {
+        const target = resolveInRoot(this.root, msg.path)
+        if (!target) return this.deny(conn, msg.id, msg.path)
+        const rel = relativeToRoot(this.root, target)
+        conn.watches.add(msg.id, target, () => {
+          send(conn.ws, { t: 'changed', id: msg.id, path: rel, at: new Date().toISOString() })
+        }, this.watchOptions)
+        send(conn.ws, { t: 'watching', id: msg.id, path: rel })
+        return
+      }
+
+      case 'unwatch': {
+        conn.watches.remove(msg.id)
         return
       }
 

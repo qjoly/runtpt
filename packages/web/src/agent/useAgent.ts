@@ -12,6 +12,7 @@ import {
   type KernelInfo,
   type SavedMsg,
   type ServerMessage,
+  type WatchingMsg,
 } from '@runtpt/protocol'
 
 export type AgentStatus = 'disconnected' | 'connecting' | 'paired' | 'denied' | 'error'
@@ -46,6 +47,9 @@ export interface AgentApi {
   /** Binary read for the images a runbook references. */
   readAsset: (path: string, maxBytes?: number) => Promise<AssetMsg>
   save: (path: string, content: string, append?: boolean) => Promise<SavedMsg>
+  /** Follow a file inside the agent root; resolves with the subscription id. */
+  watch: (path: string) => Promise<WatchingMsg>
+  unwatch: (id: string) => void
   restart: (kernel: KernelId) => void
   redact: (values: Record<string, string>) => void
   subscribe: (fn: (event: AgentEvent) => void) => () => void
@@ -179,7 +183,8 @@ export function useAgent(): AgentApi {
           case 'dir':
           case 'document':
           case 'asset':
-          case 'saved': {
+          case 'saved':
+          case 'watching': {
             const waiting = pending.current.get(msg.id)
             if (waiting) {
               pending.current.delete(msg.id)
@@ -258,6 +263,8 @@ export function useAgent(): AgentApi {
         request<AssetMsg>((id) => ({ t: 'readAsset', id, path, ...(maxBytes ? { maxBytes } : {}) })),
       save: (path, content, append) =>
         request<SavedMsg>((id) => ({ t: 'save', id, path, content, ...(append ? { append: true } : {}) })),
+      watch: (path) => request<WatchingMsg>((id) => ({ t: 'watch', id, path })),
+      unwatch: (id) => send({ t: 'unwatch', id }),
       restart: (kernel) => send({ t: 'restart', kernel }),
       redact: (values) => {
         const names = Object.keys(values)

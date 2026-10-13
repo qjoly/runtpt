@@ -102,6 +102,11 @@ slide itself. The run is recorded, so the demo can be replayed later even offlin
   scopes `repo` and `read:user`. Token stored in the browser, never on a runtpt server.
 - `FR-A2` Browse organisations, repositories, branches, directories; filter to `.md`.
 - `FR-A3` Open a runbook by URL: a GitHub blob URL pasted into runtpt resolves directly.
+- `FR-A6` An open runbook can be re-read from wherever it came from, without losing the
+  run: a cell whose source is unchanged keeps its output, an edited one is emptied, and
+  nothing reloads on its own. The agent watches a file it serves and says it changed;
+  deciding is the operator's. Yanking the document away mid-intervention is the one
+  behaviour this feature must never have.
 - `FR-A4` Public runbooks open read-only without authentication.
 - `FR-A5` Writing back (the `.runtpt`, or an inline fix to the `.md`) goes through a
   commit on a branch, with the commit message pre-filled and editable. Never a direct

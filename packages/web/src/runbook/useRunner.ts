@@ -16,6 +16,8 @@ import type { CellStatus, HostInfo } from '@runtpt/protocol'
 import type { AgentApi } from '../agent/useAgent.js'
 import type { SessionApi } from '../session/useSession.js'
 import { mergeRunEnv } from '../session/vars.js'
+import { buildChecklistIndex } from './checklist.js'
+import { carryOverChecks, carryOverStates, type CellIdentity } from './carryOver.js'
 import { runbookRefOf, type DocSource } from '../types.js'
 
 export type CellPhase = 'idle' | 'running' | CellStatus
@@ -37,6 +39,8 @@ export interface CellState {
   note: string | null
   /** What this output was actually produced by, so a later shell change cannot rewrite history. */
   ran: ResolvedKernel | null
+  /** Emptied by a reload because the source behind the recorded output changed. */
+  stale?: boolean
 }
 
 export interface ConfirmRequest {
@@ -65,6 +69,8 @@ export interface Runner {
   paramsAnswered: boolean
   markParamsAnswered: () => void
   values: Record<string, string>
+  /** Non-null for a short while after a reload rearranged the run state. */
+  reloadSummary: string | null
   resolve: (cell: Cell) => string
   resolveText: (source: string) => string
   runCell: (cell: Cell) => Promise<CellPhase>
@@ -110,6 +116,7 @@ export function useRunner(
   const [error, setError] = useState<string | null>(null)
   const [runtptText, setRuntptText] = useState('')
   const [checks, setChecks] = useState<Record<string, CheckRecord>>({})
+  const [reloadSummary, setReloadSummary] = useState<string | null>(null)
 
   const lines = useRef<string[]>([])
   const writer = useRef<RuntptWriter | null>(null)
@@ -119,20 +126,59 @@ export function useRunner(
   const buffer = useRef(new Map<string, OutChunk[]>())
   const flushTimer = useRef<number | null>(null)
 
-  // Defaults come from the declared params; the user only overrides.
+  // Reloading the document that is already open must not cost the operator the
+  // run they are in the middle of; opening a different one starts from nothing.
+  const docKey = source
+    ? [source.origin, source.repo ? `${source.repo.owner}/${source.repo.name}@${source.repo.ref}` : '', source.path].join('\u0000')
+    : ''
+  const previousDoc = useRef<{ key: string; runbook: Runbook; cells: CellIdentity[] } | null>(null)
+  // Read back during the reload effect, which must see the committed states.
+  const statesRef = useRef(states)
+  statesRef.current = states
+
   useEffect(() => {
     if (!runbook) return
+    const cells: CellIdentity[] = runbook.cells.map((cell) => ({ id: cell.id, hash: cell.hash }))
     const defaults: Record<string, string> = {}
     for (const spec of runbook.settings.params) if (spec.default !== undefined) defaults[spec.name] = spec.default
+
+    const last = previousDoc.current
+    // A StrictMode remount re-runs this effect over a document that never moved.
+    if (last && last.runbook === runbook) return
+    previousDoc.current = { key: docKey, runbook, cells }
+
+    if (last && last.key === docKey) {
+      const checkIds = buildChecklistIndex(
+        runbook.blocks.map((block) => (block.kind === 'prose' ? block.markdown : '')),
+      ).items.map((item) => item.id)
+      const carry = carryOverStates(statesRef.current, last.cells, cells)
+      const next = { ...carry.states }
+      for (const id of carry.cleared) {
+        next[id] = { ...EMPTY, stale: true, note: 'Cleared by the reload: this cell source changed' }
+      }
+      const summary = `Reloaded: ${Object.keys(carry.states).length} kept, ${carry.cleared.length} cleared, ${carry.dropped.length} dropped, ${carry.added.length} new`
+      setStates(next)
+      setChecks((prev) => carryOverChecks(prev, checkIds))
+      setParamsState((prev) => ({ ...defaults, ...prev }))
+      // Append-only: the recording stays open and records that its subject moved.
+      if (writer.current) {
+        writer.current.note(summary)
+        setRuntptText(lines.current.join('\n') + '\n')
+      }
+      setReloadSummary(summary)
+      return
+    }
+
     setParamsState(defaults)
     setParamsAnswered(runbook.settings.params.length === 0)
     setStates({})
     setChecks({})
+    setReloadSummary(null)
     lines.current = []
     writer.current = null
     redactor.current = new Redactor()
     setRuntptText('')
-  }, [runbook])
+  }, [docKey, runbook])
 
   const resolved = useMemo(
     () => resolveParams(runbook?.settings.params ?? [], params),
@@ -237,6 +283,7 @@ export function useRunner(
         startedAt,
         note: null,
         ran: kernel,
+        stale: false,
       })
 
       return new Promise<CellPhase>((done) => {
@@ -439,6 +486,7 @@ export function useRunner(
         startedAt: recorded.started,
         note: 'Replayed from a recording, not executed',
         ran: null,
+        stale: false,
       })
       return true
     },
@@ -486,6 +534,7 @@ export function useRunner(
     paramsAnswered,
     markParamsAnswered: () => setParamsAnswered(true),
     values: resolved.values,
+    reloadSummary,
     resolve: (cell) => substitute(cell.source, resolved.values),
     resolveText: (text) => substitute(text, resolved.values),
     runCell,

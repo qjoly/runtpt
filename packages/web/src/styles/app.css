@@ -38,6 +38,21 @@
   white-space: nowrap;
 }
 
+.doc-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chip-button.reload {
+  font-family: var(--mono);
+}
+
+.chip-button.reload.changed {
+  border-color: var(--stale);
+  color: var(--stale);
+}
+
 .chip-button {
   font-size: 12px;
   padding: 2px 10px;
@@ -648,7 +663,22 @@
   color: var(--fg);
 }
 
-.seg .chip-button {
+.seg .doc-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chip-button.reload {
+  font-family: var(--mono);
+}
+
+.chip-button.reload.changed {
+  border-color: var(--stale);
+  color: var(--stale);
+}
+
+.chip-button {
   border: none;
 }
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { parseRunbook, type Cell } from '@runtpt/core'
 import { readRuntpt, type RunRecording } from '@runtpt/format'
 import { useAgent } from './agent/useAgent.js'
+import { useFileWatch } from './agent/useFileWatch.js'
 import { AssetProvider, useAssetContext } from './assets/context.js'
 import { AgentPanel } from './agent/AgentPanel.js'
 import { useGithub } from './github/useGithub.js'
@@ -20,6 +21,7 @@ import { useTheme } from './theme/useTheme.js'
 import { useSession } from './session/useSession.js'
 import { ShellPanel } from './session/ShellPanel.js'
 import { DEMO_RUNBOOK } from './demo/bundled.js'
+import { refetchDoc, reloadRefusal } from './reload.js'
 import type { LoadedDoc } from './types.js'
 
 type Panel = 'open' | 'signin' | 'agent' | 'shell' | 'inputs' | 'save' | 'commit' | 'review' | 'shortcuts' | null
@@ -40,6 +42,9 @@ export function App() {
   const [presenting, setPresenting] = useState(false)
   const [focusedId, setFocusedId] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [reloading, setReloading] = useState(false)
+  // Bumped on every successful reload so the "changed on disk" flag starts over.
+  const [generation, setGeneration] = useState(0)
 
   const runbook = useMemo(() => (doc ? parseRunbook(doc.text) : null), [doc])
   const runner = useRunner(runbook, doc?.source ?? null, agent, recording, session)
@@ -53,7 +58,39 @@ export function App() {
     setView('run')
     setPanel(null)
     setFocusedId(null)
+    setGeneration((n) => n + 1)
   }, [])
+
+  const changedOnDisk = useFileWatch(agent, doc.source, generation)
+  const refusal = reloadRefusal(doc.source)
+
+  /**
+   * Explicit only. Nothing here runs on a watcher event: a document swapped
+   * under a half-finished procedure is how an operator loses their place.
+   */
+  const reload = useCallback(async () => {
+    if (reloading) return
+    if (refusal) {
+      setToast(refusal)
+      return
+    }
+    if (runner.busy || runner.runningCellId) {
+      setToast('A cell is running. Stop it (c) or wait for it to finish, then reload.')
+      return
+    }
+    setReloading(true)
+    try {
+      const next = await refetchDoc(doc.source, agent, github.token)
+      setDoc(next)
+      setGeneration((n) => n + 1)
+      setToast(null)
+    } catch (err) {
+      // The document on screen is untouched; only the attempt failed.
+      setToast(`Reload failed: ${(err as Error).message}`)
+    } finally {
+      setReloading(false)
+    }
+  }, [agent, doc.source, github.token, refusal, reloading, runner.busy, runner.runningCellId])
 
   const openRecording = useCallback((text: string, label: string) => {
     setRecording(readRuntpt(text))
@@ -233,6 +270,9 @@ export function App() {
         case 'o':
           setPanel('open')
           break
+        case 'r':
+          if (view === 'run') void reload()
+          break
         case 'v':
           if (view === 'run' && runbook) openInputs('vars')
           break
@@ -249,7 +289,7 @@ export function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [move, openInputs, panel, presenting, runbook, runFocused, runner, startRunAll, view])
+  }, [move, openInputs, panel, presenting, reload, runbook, runFocused, runner, startRunAll, view])
 
   useEffect(() => {
     const onDrop = (event: DragEvent) => {
@@ -316,6 +356,22 @@ export function App() {
           <span className="doc-label" title={doc.source.label}>
             {doc.source.label}
             {!doc.source.writable && <span className="chip">read-only</span>}
+          </span>
+          <span className="doc-actions">
+            <button
+              className={`chip-button reload ${changedOnDisk ? 'changed' : ''}`}
+              onClick={() => void reload()}
+              disabled={reloading || refusal !== null}
+              title={refusal ?? 'Re-read this document from where it came from (r)'}
+              aria-label="Reload this document"
+            >
+              {reloading ? '…' : '\u21bb'} reload
+            </button>
+            {changedOnDisk && (
+              <span className="chip stale" title="The file moved on disk. Nothing was reloaded.">
+                changed on disk
+              </span>
+            )}
           </span>
 
           <span className="spacer" />
@@ -391,6 +447,7 @@ export function App() {
           </div>
         )}
 
+        {runner.reloadSummary && view === 'run' && <div className="banner">{runner.reloadSummary}</div>}
         {runner.error && <div className="banner error-banner">{runner.error}</div>}
         {toast && <div className="banner error-banner">{toast}</div>}
 

@@ -9,6 +9,7 @@ const KEYS: [string, string][] = [
   ['j / k, ↓ / ↑', 'move the focus'],
   ['c', 'cancel the running cell'],
   ['o', 'open a runbook'],
+  ['r', 'reload the open runbook from its source'],
   ['v', 'session variables'],
   ['s', 'save the recording'],
   ['P', 'presentation mode'],
