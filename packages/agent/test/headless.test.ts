@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -117,5 +117,38 @@ describeShell('runHeadless', () => {
     expect(streams).toEqual(['stdout', 'stderr'])
     expect(recording.byId.get('alias-check')?.status).toBe('ok')
     expect(recording.byId.get('alias-state')?.kernel).toBe('bash')
+  })
+})
+
+describe('a runbook with nothing to run', () => {
+  const write = (name: string, body: string): string => {
+    const dir = mkdtempSync(path.join(os.tmpdir(), 'runtpt-inert-'))
+    const file = path.join(dir, name)
+    writeFileSync(file, body)
+    return file
+  }
+
+  // "0 ok, 0 failed" with exit 0 reads like the procedure went fine.
+  it('fails loudly and names the fix when fences were left inert', async () => {
+    const file = write('inert.md', '# Procedure\n\n```bash\necho hi\n```\n\n```bash\necho ho\n```\n')
+    await expect(runHeadless({ runbookPath: file, log: () => {} })).rejects.toMatchObject({
+      exitCode: 2,
+      message: expect.stringContaining('2 fences of a known kernel'),
+    })
+  })
+
+  it('points at the frontmatter opt-in', async () => {
+    const file = write('inert2.md', '```bash\n:\n```\n')
+    await expect(runHeadless({ runbookPath: file, log: () => {} })).rejects.toMatchObject({
+      message: expect.stringContaining('cells: all'),
+    })
+  })
+
+  it('still fails when there is nothing resembling a cell', async () => {
+    const file = write('prose.md', '# Just prose\n\nNothing to run here.\n')
+    await expect(runHeadless({ runbookPath: file, log: () => {} })).rejects.toMatchObject({
+      exitCode: 2,
+      message: expect.stringContaining('no executable cells'),
+    })
   })
 })

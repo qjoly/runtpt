@@ -61,6 +61,20 @@ export async function runHeadless(opts: HeadlessOptions): Promise<HeadlessResult
     if (d.level === 'error') throw new HeadlessError(`${runbookPath}: ${d.message}`, 2)
   }
 
+  // Asking to run something that cannot run is a mistake, not a run with nothing
+  // in it. Exiting 0 on "0 ok, 0 failed" reads like the procedure went fine.
+  if (runbook.cells.length === 0) {
+    const inert = runbook.inertFences.length
+    throw new HeadlessError(
+      inert > 0
+        ? `${displayPath(runbookPath)} has no executable cells, but ${inert} fence${inert > 1 ? 's' : ''} ` +
+          `of a known kernel. Nothing runs until a cell opts in: add \`run\` to the fences you mean to ` +
+          `execute, or arm them all with:\n\n  ---\n  runtpt:\n    cells: all\n  ---`
+        : `${displayPath(runbookPath)} has no executable cells.`,
+      2,
+    )
+  }
+
   const resolved = resolveParams(runbook.settings.params, opts.params ?? {})
   if (resolved.missing.length > 0) {
     throw new HeadlessError(

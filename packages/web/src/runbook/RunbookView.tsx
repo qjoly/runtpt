@@ -64,6 +64,16 @@ export function RunbookView({
         </details>
       )}
 
+      {runbook.cells.length === 0 && runbook.inertFences.length > 0 && (
+        <p className="warn-box">
+          Nothing here can run. {runbook.inertFences.length} code{' '}
+          {runbook.inertFences.length === 1 ? 'block looks' : 'blocks look'} runnable but
+          no cell opted in. Add <code>run</code> to the blocks you mean to execute, or arm
+          them all by putting <code>cells: all</code> under <code>runtpt:</code> in the
+          frontmatter.
+        </p>
+      )}
+
       {runbook.blocks.map((block, index) => {
         if (block.kind === 'prose') return <Markdown key={index} text={prose[index]!} checklist={views[index]} />
         if (block.kind !== 'cell') return null

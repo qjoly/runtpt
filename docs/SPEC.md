@@ -121,6 +121,9 @@ slide itself. The run is recorded, so the demo can be replayed later even offlin
   A pinned cell is never affected by the override, and the UI always displays the kernel
   that will actually run — badging `bash` while executing zsh is the one thing this
   design exists to prevent.
+- `FR-D13` A runbook that yields no executable cells is reported as a mistake, in the
+  CLI and in the UI, naming how many fences were left inert and how to arm them. Silently
+  succeeding at running nothing is the worst available outcome for a procedure.
 - `FR-D10` A runbook may arm every fence at once with `cells: all`, for a procedure
   written as ordinary markdown. The default stays opt-in per fence, so opening existing
   documentation never makes it executable.

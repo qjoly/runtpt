@@ -66,3 +66,25 @@ describe('cells: all', () => {
     expect(rb.diagnostics.some((d) => /Unknown cells mode/.test(d.message))).toBe(true)
   })
 })
+
+describe('inertFences', () => {
+  it('counts the fences that would run if the document opted in', () => {
+    const rb = parseRunbook('```bash\n:\n```\n\n```yaml\na: 1\n```\n\n```python\npass\n```\n')
+    expect(rb.cells).toHaveLength(0)
+    expect(rb.inertFences.map((f) => f.kernel)).toEqual(['bash', 'python'])
+  })
+
+  it('is empty once the fences are armed', () => {
+    const rb = parseRunbook('---\nruntpt:\n  cells: all\n---\n\n```bash\n:\n```\n')
+    expect(rb.inertFences).toHaveLength(0)
+  })
+
+  it('does not count a fence that is not a kernel', () => {
+    expect(parseRunbook('```json\n{}\n```\n').inertFences).toHaveLength(0)
+  })
+
+  it('reports where each one is', () => {
+    const rb = parseRunbook('intro\n\n```bash\n:\n```\n')
+    expect(rb.inertFences[0]!.line).toBe(3)
+  })
+})

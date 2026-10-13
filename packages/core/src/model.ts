@@ -124,6 +124,12 @@ export interface Slide {
   notes: string[]
 }
 
+/** A fence of a known kernel that stayed inert because nothing opted it in. */
+export interface InertFence {
+  kernel: CellKernel
+  line: number
+}
+
 export interface Runbook {
   title?: string
   settings: RuntptSettings
@@ -131,6 +137,8 @@ export interface Runbook {
   frontmatterRaw: string | null
   blocks: Block[]
   cells: Cell[]
+  /** Runnable-looking fences left inert; the reason a runbook can have no cells. */
+  inertFences: InertFence[]
   source: string
   diagnostics: Diagnostic[]
 }

@@ -8,6 +8,7 @@ import {
   type Block,
   type Cell,
   type CellKernel,
+  type InertFence,
   type Diagnostic,
   type ParamSpec,
   type Runbook,
@@ -172,6 +173,7 @@ export function parseRunbook(source: string, diagnostics: Diagnostic[] = []): Ru
 
   const blocks: Block[] = []
   const cells: Cell[] = []
+  const inertFences: InertFence[] = []
   const taken = new Set<string>()
 
   let prose: string[] = []
@@ -266,6 +268,7 @@ export function parseRunbook(source: string, diagnostics: Diagnostic[] = []): Ru
     const sourceText = body.join('\n')
 
     if (!executable) {
+      if (isKernel(parsed.lang)) inertFences.push({ kernel: parsed.lang, line: i + 1 })
       // Verbatim means the original lines: `body` has been de-indented for the
       // cell path, and re-emitting it between still-indented fence markers broke
       // the markdown that followed an indented snippet.
@@ -316,6 +319,7 @@ export function parseRunbook(source: string, diagnostics: Diagnostic[] = []): Ru
     frontmatterRaw: fm.raw,
     blocks,
     cells,
+    inertFences,
     source,
     diagnostics,
     ...(title ? { title } : {}),

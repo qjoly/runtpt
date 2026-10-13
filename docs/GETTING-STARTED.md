@@ -110,6 +110,10 @@ runtpt run runbooks/incident.md \
 | `--yes` | also run cells marked `confirm` |
 | `--json` | machine-readable events on stdout |
 
+A runbook where nothing can run is an error, not an empty success: if every fence was
+left inert, `runtpt run` says how many looked runnable, points at `cells: all`, and exits
+2. Reporting `0 ok, 0 failed` and exiting 0 would read like the procedure went fine.
+
 The exit code is 0 only if every cell that was supposed to pass did. A cell marked
 `continue-on-error` can fail without failing the run, but its dependents are still
 skipped and the failure is still recorded.
