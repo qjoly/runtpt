@@ -64,9 +64,18 @@ JSON messages over a loopback WebSocket, `ws://127.0.0.1:7777`.
 ← chunk        { runId, cellId, seq, stream, data }
 ← result       { runId, cellId, status, exit, durationMs }
 → cancel       { runId, cellId }
-→ record       { runId, record }   append a record to the .runtpt
-→ save         { path, content }
+→ stdin        { runId, cellId, data }
+→ restart      { kernel }
+→ redact       { values, names }   register secrets before anything can leak
+→ save         { path, content, append }
 ```
+
+There is no dedicated "append a record" message: the browser writes the `.runtpt`
+incrementally with `save` + `append`, which keeps the agent ignorant of the format.
+
+Paths in `listDir`, `open` and `save` are **relative to the agent's root** in both
+directions. The agent rejects anything resolving outside it and never echoes an absolute
+path back, so the browser cannot learn the layout above the directory the user chose.
 
 The browser is the orchestrator: it decides what runs next and when a run ends. The
 agent is deliberately dumb about document semantics — except in headless mode, where it

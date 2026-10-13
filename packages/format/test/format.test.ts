@@ -133,6 +133,20 @@ describe('redaction', () => {
     expect(raw).toContain('«redacted:TOKEN»')
   })
 
+  it('redacts a secret passed as a run parameter', () => {
+    const redactor = new Redactor()
+    redactor.add('TOKEN', 'hunter2000')
+    const { w, text } = writer({ redactor, params: { CLUSTER: 'staging', TOKEN: 'hunter2000' } })
+    w.header()
+
+    const raw = text()
+    expect(raw).not.toContain('hunter2000')
+    expect(readRuntpt(raw).header?.run.params).toEqual({
+      CLUSTER: 'staging',
+      TOKEN: '\u00abredacted:TOKEN\u00bb',
+    })
+  })
+
   it('redacts the longest match first so secrets cannot shadow each other', () => {
     const r = new Redactor()
     r.add('SHORT', 'abcd')
@@ -140,11 +154,16 @@ describe('redaction', () => {
     expect(r.apply('abcdefgh')).toBe('«redacted:LONG»')
   })
 
-  it('refuses values too short to be worth matching', () => {
+  it('refuses values too short to be worth matching, and says so', () => {
     const r = new Redactor()
-    r.add('X', 'ab')
+    expect(r.add('X', 'ab')).toBe(false)
     expect(r.apply('ab cd')).toBe('ab cd')
     expect(r.size).toBe(0)
+  })
+
+  it('reports which names it refused when adding in bulk', () => {
+    const r = new Redactor()
+    expect(r.addAll({ SHORT: 'ab', LONG: 'abcdefgh' })).toEqual(['SHORT'])
   })
 })
 

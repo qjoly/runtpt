@@ -134,7 +134,10 @@ slide itself. The run is recorded, so the demo can be replayed later even offlin
 - `FR-E5` Long outputs are truncated in the UI past a configurable threshold, but stored
   in full in the `.runtpt` up to a size cap, then spilled or truncated with a marker.
 - `FR-E6` Secrets: values matching declared secret parameters are redacted from the
-  `.runtpt` and from the UI, replaced by `«redacted:NAME»`.
+  `.runtpt` and from the UI, replaced by `«redacted:NAME»`. Redaction happens in the
+  agent, before a chunk reaches the wire. A secret shorter than four characters is
+  refused rather than redacted, because it would match unrelated output — the UI must
+  warn when that happens instead of implying protection it does not provide.
 - `FR-E7` Nothing runs without an explicit action. No auto-run on open, ever.
 
 ### 7.4 Recording

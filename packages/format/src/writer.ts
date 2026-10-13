@@ -49,11 +49,18 @@ export class RuntptWriter {
   }
 
   header(startedAt = new Date().toISOString()): void {
+    // The params land in the header verbatim, so they go through the redactor
+    // like any other payload: a secret passed as a parameter must not be the one
+    // place it reaches disk in clear.
+    const params = this.opts.params
+      ? Object.fromEntries(Object.entries(this.opts.params).map(([k, v]) => [k, this.redact(v)]))
+      : undefined
+
     const header: HeaderRecord = {
       t: 'header',
       v: RUNTPT_VERSION,
       runbook: this.opts.runbook,
-      run: { id: this.opts.runId, started: startedAt, ...(this.opts.params ? { params: this.opts.params } : {}) },
+      run: { id: this.opts.runId, started: startedAt, ...(params ? { params } : {}) },
       host: this.opts.host,
     }
     this.emit(header)

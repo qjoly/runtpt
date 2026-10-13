@@ -1,0 +1,20 @@
+{
+  "name": "@runtpt/agent",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "bin": { "runtpt": "./dist/cli.js" },
+  "files": ["dist"],
+  "scripts": { "build": "tsc -b" },
+  "dependencies": {
+    "@runtpt/protocol": "0.1.0",
+    "@runtpt/format": "0.1.0",
+    "@runtpt/core": "0.1.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.13"
+  }
+}
