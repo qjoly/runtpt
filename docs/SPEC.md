@@ -116,6 +116,14 @@ slide itself. The run is recorded, so the demo can be replayed later even offlin
   shell, environment variables, required inputs, presentation theme.
 - `FR-D4` Parameters are declared in frontmatter and prompted for before the first run;
   they are exposed to cells as environment variables and as `{{ placeholders }}`.
+- `FR-D7` A cell's kernel is either *pinned* (`bash`, `zsh`, `python`, …) or *inherited*
+  (`shell`, resolved against the runbook's `shell:` setting and the session override).
+  A pinned cell is never affected by the override, and the UI always displays the kernel
+  that will actually run — badging `bash` while executing zsh is the one thing this
+  design exists to prevent.
+- `FR-D8` An interpreter may be given explicitly, per runbook (`interpreters:`) or per
+  cell (`interpreter=`). Sessions are keyed by kernel *and* interpreter, so two paths to
+  the same shell are two independent sessions with independent state.
 - `FR-D5` A cell may declare `depends` on other cell ids; *Run all* respects the order
   and refuses to run a cell whose dependency failed.
 - `FR-D6` `continue-on-error` means the *run* survives the failure, not that the failure
@@ -131,6 +139,16 @@ slide itself. The run is recorded, so the demo can be replayed later even offlin
 - `FR-E3` A running cell can be cancelled; the agent sends SIGINT then SIGTERM.
 - `FR-E4` A session holds state across cells of the same kernel: working directory,
   exported variables, and for Python a persistent interpreter.
+- `FR-E8` Environment variables reach a cell from three sources, in increasing
+  precedence: frontmatter `env`, session variables, resolved parameters. Session
+  variables are never persisted — not to the document, not to browser storage — so one
+  can safely hold a token; they may be marked secret and are then redacted like a secret
+  parameter.
+- `FR-E9` A session variable must not outlive the browser session that set it. Because
+  the agent's shells are persistent and survive the tab, the agent tracks the variables
+  it injected and unsets them when the connection closes, and when one is removed
+  mid-session. Variables the operator's own commands exported are left untouched: they
+  are the session state FR-E4 promises to keep.
 - `FR-E5` Long outputs are truncated in the UI past a configurable threshold, but stored
   in full in the `.runtpt` up to a size cap, then spilled or truncated with a marker.
 - `FR-E6` Secrets: values matching declared secret parameters are redacted from the

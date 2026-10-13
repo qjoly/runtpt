@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { parseArgs } from 'node:util'
 import { DEFAULT_AGENT_PORT } from '@runtpt/protocol'
-import { parseDuration } from '@runtpt/core'
+import { parseDuration, parseShellChoice, type Diagnostic, type ShellChoice } from '@runtpt/core'
 import { HeadlessError, runHeadless } from './headless.js'
 import { AgentServer, AGENT_VERSION } from './server.js'
 
@@ -17,6 +17,10 @@ const USAGE = `runtpt ${AGENT_VERSION}
   runtpt run <runbook.md> [options] headless run, writes a .runtpt
     --out <file>      output file (default: <runbook>.runtpt)
     --param K=V       parameter value (repeatable)
+    --env K=V         extra environment variable (repeatable); wins over the
+                      runbook's env, loses to --param
+    --shell <name|path>  interpreter for \`shell\` cells; cells that named
+                      their own kernel are untouched
     --cwd <dir>       working directory for the kernels
     --timeout <dur>   default per-cell timeout, e.g. 5m
     --yes             also run cells marked \`confirm\`
@@ -113,6 +117,8 @@ async function run(argv: string[]): Promise<number> {
     options: {
       out: { type: 'string' },
       param: { type: 'string', multiple: true },
+      env: { type: 'string', multiple: true },
+      shell: { type: 'string' },
       cwd: { type: 'string' },
       timeout: { type: 'string' },
       yes: { type: 'boolean', default: false },
@@ -137,6 +143,23 @@ async function run(argv: string[]): Promise<number> {
     params[pair.slice(0, eq)] = pair.slice(eq + 1)
   }
 
+  const env: Record<string, string> = {}
+  for (const pair of values.env ?? []) {
+    const eq = pair.indexOf('=')
+    if (eq <= 0) {
+      process.stderr.write(`runtpt: --env expects NAME=value, got "${pair}"\n`)
+      return 2
+    }
+    env[pair.slice(0, eq)] = pair.slice(eq + 1)
+  }
+
+  let shell: ShellChoice | undefined
+  if (values.shell) {
+    const diagnostics: Diagnostic[] = []
+    shell = parseShellChoice(values.shell, diagnostics)
+    for (const d of diagnostics) process.stderr.write(`runtpt: ${d.message}\n`)
+  }
+
   let defaultTimeoutMs: number | undefined
   if (values.timeout) {
     const ms = parseDuration(values.timeout)
@@ -152,6 +175,8 @@ async function run(argv: string[]): Promise<number> {
       runbookPath,
       params,
       ...(values.out ? { out: values.out } : {}),
+      ...(Object.keys(env).length > 0 ? { env } : {}),
+      ...(shell ? { shell } : {}),
       ...(values.cwd ? { cwd: values.cwd } : {}),
       ...(defaultTimeoutMs !== undefined ? { defaultTimeoutMs } : {}),
       yes: values.yes,

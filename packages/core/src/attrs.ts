@@ -1,11 +1,10 @@
-import type { KernelId } from '@runtpt/protocol'
-import type { CellAttrs, Diagnostic, OutputHint } from './model.js'
+import type { CellAttrs, CellKernel, Diagnostic, OutputHint } from './model.js'
 
-export const KERNELS: KernelId[] = ['bash', 'sh', 'zsh', 'python', 'http']
+export const KERNELS: CellKernel[] = ['shell', 'bash', 'sh', 'zsh', 'python', 'http']
 
 const KNOWN_KEYS = new Set([
   'run', 'id', 'name', 'timeout', 'depends', 'continue-on-error',
-  'confirm', 'hidden', 'cwd', 'output', 'interactive',
+  'confirm', 'hidden', 'cwd', 'output', 'interactive', 'interpreter',
 ])
 
 const OUTPUT_HINTS = new Set(['text', 'json', 'table', 'chart'])
@@ -124,12 +123,16 @@ export function parseInfoString(info: string, diagnostics: Diagnostic[] = [], li
       case 'interactive':
         attrs.interactive = true
         break
+      case 'interpreter':
+        if (typeof value === 'string' && value !== '') attrs.interpreter = value
+        else diagnostics.push({ level: 'warn', message: 'interpreter= needs a path', line })
+        break
     }
   }
 
   return { lang, attrs, hasAttrs }
 }
 
-export function isKernel(lang: string): lang is KernelId {
+export function isKernel(lang: string): lang is CellKernel {
   return (KERNELS as string[]).includes(lang)
 }

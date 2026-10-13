@@ -424,3 +424,123 @@
 .preview {
   max-height: 30vh;
 }
+
+/* Toolbar groups: controls that are one idea read as one control. */
+.seg {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.seg.round {
+  border-radius: 999px;
+}
+
+.seg.paired {
+  border-color: var(--ok);
+}
+
+.seg.denied,
+.seg.error {
+  border-color: var(--bad);
+}
+
+.seg > button {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  color: var(--fg-dim);
+}
+
+.seg > button + button {
+  border-left: 1px solid var(--line-strong);
+}
+
+.seg > button:hover:not(:disabled) {
+  background: var(--bg-raised);
+  color: var(--fg);
+}
+
+.seg .chip-button {
+  border: none;
+}
+
+.shell-chip .meta {
+  letter-spacing: 0.04em;
+}
+
+.shell-chip.muted {
+  opacity: 0.55;
+}
+
+.shell-row.selected {
+  color: var(--fg);
+  background: var(--bg-sunken);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.list-row.empty {
+  padding: 8px 10px;
+}
+
+.var-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.var-row {
+  display: grid;
+  grid-template-columns: 16ch 1fr max-content max-content;
+  gap: 8px;
+  align-items: center;
+}
+
+.var-key {
+  font-family: var(--mono);
+  text-transform: none;
+}
+
+.var-key.invalid {
+  border-color: var(--bad);
+}
+
+.var-error {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.from-runbook summary {
+  cursor: pointer;
+  color: var(--fg-dim);
+  font-size: 12px;
+}
+
+.from-runbook .facts {
+  margin-top: 8px;
+}
+
+.facts .fact-pair {
+  display: contents;
+}
+
+.facts .fact-pair.shadowed dt,
+.facts .fact-pair.shadowed dd code {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+.facts .fact-pair dd {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.modal-actions {
+  margin-top: 16px;
+}

@@ -2,6 +2,19 @@ import type { KernelId } from '@runtpt/protocol'
 
 export type OutputHint = 'text' | 'json' | 'table' | 'chart'
 
+/**
+ * `shell` is a document-level alias resolved against the runbook's configured
+ * shell. Every other name pins a concrete interpreter, so a cell badged `bash`
+ * never turns out to have run zsh.
+ */
+export type CellKernel = KernelId | 'shell'
+
+export interface ShellChoice {
+  kernel: 'bash' | 'sh' | 'zsh'
+  /** Explicit interpreter path, when the runbook asked for one. */
+  path?: string
+}
+
 export interface CellAttrs {
   /** Explicit opt-in flag. A fence with no attribute at all stays inert. */
   run: boolean
@@ -15,6 +28,8 @@ export interface CellAttrs {
   cwd?: string
   output?: OutputHint
   interactive: boolean
+  /** Overrides the interpreter for this cell only. */
+  interpreter?: string
   /** Attributes we did not recognise, surfaced as warnings but kept. */
   unknown: Record<string, string | true>
 }
@@ -23,7 +38,7 @@ export interface Cell {
   id: string
   /** False when the id was derived from the content hash. */
   explicitId: boolean
-  kernel: KernelId
+  kernel: CellKernel
   source: string
   hash: string
   attrs: CellAttrs
@@ -79,9 +94,11 @@ export interface PresentationSettings {
 }
 
 export interface RuntptSettings {
-  shell: KernelId
+  shell: ShellChoice
   cwd?: string
   env: Record<string, string>
+  /** Explicit interpreter path per kernel, e.g. `python: /usr/bin/python3.12`. */
+  interpreters: Partial<Record<KernelId, string>>
   params: ParamSpec[]
   presentation: PresentationSettings
 }
@@ -111,8 +128,9 @@ export interface Runbook {
 }
 
 export const DEFAULT_SETTINGS: RuntptSettings = {
-  shell: 'bash',
+  shell: { kernel: 'bash' },
   env: {},
+  interpreters: {},
   params: [],
   presentation: { theme: 'default', slides: 'hr' },
 }

@@ -8,33 +8,37 @@ import { CommitDialog } from './github/CommitDialog.js'
 import { getFile } from './github/api.js'
 import { OpenPanel } from './open/OpenPanel.js'
 import { RunbookView } from './runbook/RunbookView.js'
-import { ParamsPanel } from './runbook/ParamsPanel.js'
+import { InputsPanel, type InputsTab } from './runbook/InputsPanel.js'
 import { ReviewPanel } from './runbook/ReviewPanel.js'
 import { SavePanel } from './runbook/SavePanel.js'
 import { useRunner } from './runbook/useRunner.js'
 import { ReplayView } from './replay/ReplayView.js'
 import { Present } from './present/Present.js'
 import { Shortcuts } from './ui/Shortcuts.js'
+import { useSession } from './session/useSession.js'
+import { ShellPanel } from './session/ShellPanel.js'
 import { DEMO_RUNBOOK } from './demo/bundled.js'
 import type { LoadedDoc } from './types.js'
 
-type Panel = 'open' | 'signin' | 'agent' | 'params' | 'save' | 'commit' | 'review' | 'shortcuts' | null
+type Panel = 'open' | 'signin' | 'agent' | 'shell' | 'inputs' | 'save' | 'commit' | 'review' | 'shortcuts' | null
 
 export function App() {
   const agent = useAgent()
   const github = useGithub()
+  const session = useSession()
 
   const [doc, setDoc] = useState<LoadedDoc>(DEMO_RUNBOOK)
   const [recording, setRecording] = useState<RunRecording | null>(null)
   const [recordingLabel, setRecordingLabel] = useState('')
   const [view, setView] = useState<'run' | 'replay'>('run')
   const [panel, setPanel] = useState<Panel>(null)
+  const [inputsTab, setInputsTab] = useState<InputsTab>('params')
   const [presenting, setPresenting] = useState(false)
   const [focusedId, setFocusedId] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
 
   const runbook = useMemo(() => (doc ? parseRunbook(doc.text) : null), [doc])
-  const runner = useRunner(runbook, doc?.source ?? null, agent, recording)
+  const runner = useRunner(runbook, doc?.source ?? null, agent, recording, session)
 
   const canRun = agent.status === 'paired'
   const paramsPending = runbook !== null && runbook.settings.params.length > 0 && !runner.paramsAnswered
@@ -82,7 +86,13 @@ export function App() {
   const resumeAfterParams = useRef<(() => void) | null>(null)
   const askParams = useCallback((resume: () => void) => {
     resumeAfterParams.current = resume
-    setPanel('params')
+    setInputsTab('params')
+    setPanel('inputs')
+  }, [])
+
+  const openInputs = useCallback((tab: InputsTab) => {
+    setInputsTab(tab)
+    setPanel('inputs')
   }, [])
 
   const runAllNow = useCallback(() => {
@@ -180,6 +190,9 @@ export function App() {
         case 'o':
           setPanel('open')
           break
+        case 'v':
+          if (view === 'run' && runbook) openInputs('vars')
+          break
         case 's':
           if (runner.hasRecord) setPanel('save')
           break
@@ -193,7 +206,7 @@ export function App() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [move, panel, presenting, runFocused, runner, startRunAll, view])
+  }, [move, openInputs, panel, presenting, runbook, runFocused, runner, startRunAll, view])
 
   useEffect(() => {
     const onDrop = (event: DragEvent) => {
@@ -243,6 +256,12 @@ export function App() {
   const agentLabel =
     agent.status === 'paired' ? (agent.host?.name ?? 'agent') : agent.status === 'connecting' ? 'connecting…' : 'no agent'
 
+  const shellChoice = session.shellOverride ?? runbook?.settings.shell ?? { kernel: 'bash' as const }
+  const shellTitle =
+    agent.status === 'paired'
+      ? `shell cells run ${shellChoice.kernel}${session.shellOverride ? ' (session override)' : ' (from the runbook)'}`
+      : 'No agent connected — only the agent knows which shells exist on this machine'
+
   return (
     <div className="app">
       <header className="topbar">
@@ -254,10 +273,17 @@ export function App() {
 
         <span className="spacer" />
 
-        {runbook && runbook.settings.params.length > 0 && view === 'run' && (
-          <button className="ghost small" onClick={() => setPanel('params')}>
-            Params {paramsPending ? '•' : ''}
-          </button>
+        {runbook && view === 'run' && (
+          <span className="seg" aria-label="Inputs to this run">
+            {runbook.settings.params.length > 0 && (
+              <button className="small" onClick={() => openInputs('params')}>
+                Params {paramsPending ? '•' : ''}
+              </button>
+            )}
+            <button className="small" onClick={() => openInputs('vars')} title="Session environment variables (v)">
+              Vars {session.count > 0 && <span className="chip">{session.count}</span>}
+            </button>
+          </span>
         )}
         {view === 'run' && (
           <>
@@ -286,9 +312,19 @@ export function App() {
         <button className="ghost small" onClick={() => setPanel('open')}>
           Open
         </button>
-        <button className={`chip-button ${agent.status}`} onClick={() => setPanel('agent')}>
-          {agentLabel}
-        </button>
+        <span className={`seg round ${agent.status}`}>
+          <button
+            className={`chip-button shell-chip ${agent.status === 'paired' ? '' : 'muted'}`}
+            title={shellTitle}
+            onClick={() => setPanel('shell')}
+          >
+            <span className="meta">shell</span>
+            {shellChoice.kernel}
+          </button>
+          <button className={`chip-button ${agent.status}`} onClick={() => setPanel('agent')}>
+            {agentLabel}
+          </button>
+        </span>
         <button className="chip-button" onClick={() => setPanel('signin')}>
           {github.user ? github.user.login : 'sign in'}
         </button>
@@ -341,6 +377,7 @@ export function App() {
             runner={runner}
             recording={recording}
             canRun={canRun}
+            shellOverride={session.shellOverride}
             focusedId={focusedId}
             onFocus={setFocusedId}
             onRunCell={runOne}
@@ -359,10 +396,21 @@ export function App() {
         />
       )}
       {panel === 'agent' && <AgentPanel agent={agent} onClose={() => setPanel(null)} />}
-      {panel === 'params' && runbook && (
-        <ParamsPanel
-          specs={runbook.settings.params}
+      {panel === 'shell' && (
+        <ShellPanel
+          settings={runbook?.settings ?? null}
+          agent={agent}
+          session={session}
+          onClose={() => setPanel(null)}
+          onPair={() => setPanel('agent')}
+        />
+      )}
+      {panel === 'inputs' && runbook && (
+        <InputsPanel
+          runbook={runbook}
           runner={runner}
+          session={session}
+          initialTab={inputsTab}
           onClose={() => {
             // Backing out of the modal abandons the run that opened it.
             resumeAfterParams.current = null
@@ -381,6 +429,7 @@ export function App() {
           runbook={runbook}
           runner={runner}
           origin={doc.source.label}
+          shellOverride={session.shellOverride}
           onClose={() => setPanel(null)}
           onConfirm={() => {
             setPanel(null)

@@ -1,16 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Cell } from '@runtpt/core'
+import type { Cell, ResolvedKernel } from '@runtpt/core'
+import { KernelBadge } from './KernelBadge.js'
 import { OutputView } from './OutputView.js'
 import type { CellState } from './useRunner.js'
 
 interface Props {
   cell: Cell
   state: CellState
+  kernel: ResolvedKernel
   resolved: string
   focused: boolean
   canRun: boolean
   canReplay: boolean
   stale?: boolean
+  /** Set when the recorded output came from another shell than the one now selected. */
+  ranUnder?: string
   onFocus: () => void
   onRun: () => void
   onReplay: () => void
@@ -36,11 +40,13 @@ function duration(ms: number | null): string {
 export function CellView({
   cell,
   state,
+  kernel,
   resolved,
   focused,
   canRun,
   canReplay,
   stale,
+  ranUnder,
   onFocus,
   onRun,
   onReplay,
@@ -76,7 +82,7 @@ export function CellView({
       data-cell-id={cell.id}
     >
       <header className="cell-head">
-        <span className={`kernel k-${cell.kernel}`}>{cell.kernel}</span>
+        <KernelBadge cell={cell} resolved={kernel} />
         <span className="cell-id" title={cell.explicitId ? 'explicit id' : 'id derived from the content hash'}>
           {cell.attrs.name ?? cell.id}
         </span>
@@ -88,6 +94,7 @@ export function CellView({
           {cell.attrs.hidden && <span className="chip">hidden</span>}
           {cell.attrs.cwd && <span className="chip">cwd {cell.attrs.cwd}</span>}
           {stale && <span className="chip stale">stale</span>}
+          {ranUnder && <span className="chip stale">ran under {ranUnder}</span>}
         </span>
         <span className="spacer" />
         {substituted && (

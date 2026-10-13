@@ -225,3 +225,33 @@
   font-size: 12px;
   color: var(--stale);
 }
+
+/* A resolved alias keeps the alias visible: the badge must not claim a pin. */
+.kernel.derived {
+  background: transparent;
+  border: 1px dashed var(--accent-dim);
+  color: #cfe0ff;
+}
+
+.kernel.k-python.derived,
+.kernel.k-http.derived {
+  border-color: var(--line-strong);
+}
+
+.kernel-from {
+  color: var(--fg-faint);
+  margin-right: 4px;
+}
+
+.kernel-arrow {
+  color: var(--fg-faint);
+  margin-right: 4px;
+}
+
+.kernel-path {
+  margin-left: 5px;
+  padding-left: 5px;
+  border-left: 1px solid var(--line-strong);
+  color: var(--fg-faint);
+  text-transform: none;
+}

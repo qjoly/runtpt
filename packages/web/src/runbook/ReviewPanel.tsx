@@ -1,17 +1,19 @@
-import type { Runbook } from '@runtpt/core'
+import { resolveKernel, type Runbook, type ShellChoice } from '@runtpt/core'
 import { Modal } from '../ui/Modal.js'
+import { KernelBadge } from './KernelBadge.js'
 import type { Runner } from './useRunner.js'
 
 interface Props {
   runbook: Runbook
   runner: Runner
   origin: string
+  shellOverride: ShellChoice | null
   onClose: () => void
   onConfirm: () => void
 }
 
 /** Section 9: a runbook from a repository you do not own gets read before it runs. */
-export function ReviewPanel({ runbook, runner, origin, onClose, onConfirm }: Props) {
+export function ReviewPanel({ runbook, runner, origin, shellOverride, onClose, onConfirm }: Props) {
   return (
     <Modal title="Review before running" onClose={onClose} wide>
       <div className="stack">
@@ -23,7 +25,7 @@ export function ReviewPanel({ runbook, runner, origin, onClose, onConfirm }: Pro
           {runbook.cells.map((cell) => (
             <div key={cell.id} className="review-item">
               <div className="cell-head">
-                <span className={`kernel k-${cell.kernel}`}>{cell.kernel}</span>
+                <KernelBadge cell={cell} resolved={resolveKernel(cell, runbook.settings, shellOverride)} />
                 <span className="cell-id">{cell.attrs.name ?? cell.id}</span>
                 {cell.attrs.hidden && <span className="chip">hidden</span>}
                 {cell.attrs.confirm && <span className="chip warn">confirm</span>}

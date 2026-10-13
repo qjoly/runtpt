@@ -28,6 +28,11 @@ OAuth, repo/branch/file browser, open-by-URL, read-only public runbooks, committ
 Persistent `python` session with rich display, and the `http` kernel. Parameters,
 secrets and redaction. `depends`, `timeout`, `confirm`, `continue-on-error`.
 
+## M3.5 — Shells and variables *(done)*
+
+The `shell` alias, explicit interpreter paths per runbook and per cell, and
+session-scoped environment variables that are never written anywhere.
+
 ## M4 — Replay
 
 Open a `.runtpt` as a first-class document, with or without its runbook. Side-by-side

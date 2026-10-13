@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { createWriteStream, promises as fs } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import type { ShellChoice } from '@runtpt/core'
 import { parseRunbook, resolveParams } from '@runtpt/core'
 import { Redactor, RuntptWriter, runtptPathFor } from '@runtpt/format'
 import { KernelPool } from './pool.js'
@@ -20,6 +21,10 @@ export interface HeadlessOptions {
   params?: Record<string, string>
   cwd?: string
   defaultTimeoutMs?: number
+  /** Overrides the runbook's shell for `shell` cells only. */
+  shell?: ShellChoice | null
+  /** Extra variables, above the runbook's `env` but below resolved params. */
+  env?: Record<string, string>
   /** Without it, `confirm` cells are skipped: CI must not run what a human was meant to approve. */
   yes?: boolean
   json?: boolean
@@ -89,7 +94,10 @@ export async function runHeadless(opts: HeadlessOptions): Promise<HeadlessResult
     sink: (line) => stream.write(line + '\n'),
   })
 
-  const pool = new KernelPool({ cwd: sessionCwd, env: { ...runbook.settings.env, ...resolved.values } })
+  const pool = new KernelPool({
+    cwd: sessionCwd,
+    env: { ...runbook.settings.env, ...opts.env, ...resolved.values },
+  })
   writer.header()
   if (runbook.title) log(`runtpt: ${runbook.title}`)
 
@@ -101,15 +109,18 @@ export async function runHeadless(opts: HeadlessOptions): Promise<HeadlessResult
       pool,
       cwd: base,
       allowConfirm: opts.yes === true,
+      ...(opts.shell ? { shellOverride: opts.shell } : {}),
+      ...(opts.env ? { extraEnv: opts.env } : {}),
       ...(opts.defaultTimeoutMs ? { defaultTimeoutMs: opts.defaultTimeoutMs } : {}),
       events: {
-        onCellStart(cell, resolvedSource, index, total) {
-          log(`[${index + 1}/${total}] ${label(cell.id, cell.attrs.name)} (${cell.kernel}) running`)
-          emit({ event: 'cellStart', id: cell.id, kernel: cell.kernel })
+        onCellStart(cell, resolvedSource, index, total, resolvedKernel) {
+          // Always report what actually runs, never the `shell` alias.
+          log(`[${index + 1}/${total}] ${label(cell.id, cell.attrs.name)} (${kernelLabel(resolvedKernel)}) running`)
+          emit({ event: 'cellStart', id: cell.id, kernel: resolvedKernel.kernel, interpreter: resolvedKernel.interpreter })
           writer.cell({
             id: cell.id,
             hash: cell.hash,
-            kernel: cell.kernel,
+            kernel: resolvedKernel.kernel,
             source: resolvedSource,
             ...(cell.attrs.name ? { name: cell.attrs.name } : {}),
           })
@@ -131,13 +142,13 @@ export async function runHeadless(opts: HeadlessOptions): Promise<HeadlessResult
           log(`    → ${outcome.status} exit=${outcome.exit ?? '-'} in ${outcome.durationMs}ms${suffix}`)
           emit({ event: 'cellEnd', id: cell.id, status: outcome.status, exit: outcome.exit, tolerated })
         },
-        onCellSkipped(cell, resolvedSource, reason, index, total) {
+        onCellSkipped(cell, resolvedSource, reason, index, total, resolvedKernel) {
           log(`[${index + 1}/${total}] ${label(cell.id, cell.attrs.name)} skipped: ${reason}`)
           emit({ event: 'cellSkipped', id: cell.id, reason })
           writer.cell({
             id: cell.id,
             hash: cell.hash,
-            kernel: cell.kernel,
+            kernel: resolvedKernel.kernel,
             source: resolvedSource,
             ...(cell.attrs.name ? { name: cell.attrs.name } : {}),
           })
@@ -167,6 +178,11 @@ export async function runHeadless(opts: HeadlessOptions): Promise<HeadlessResult
     exitCode,
   })
   return { outPath, summary, exitCode }
+}
+
+/** For the operator's log only: the recording keeps the bare kernel name. */
+function kernelLabel(resolved: { kernel: string; interpreter?: string }): string {
+  return resolved.interpreter ? `${resolved.kernel} (${resolved.interpreter})` : resolved.kernel
 }
 
 function label(id: string, name?: string): string {

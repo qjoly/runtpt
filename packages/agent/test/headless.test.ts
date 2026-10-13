@@ -110,6 +110,12 @@ describeShell('runHeadless', () => {
     expect(recording.byId.get('expected-failure')?.exit).toBe(3)
     expect(recording.byId.get('never-runs')?.status).toBe('skipped')
     expect(recording.byId.get('never-runs')?.outputs).toEqual([])
-    expect(recording.byId.get('streams')?.outputs.map((o) => o.stream)).toEqual(['stdout', 'stderr'])
+    // Chunk boundaries are a timing artefact; only the order of the streams matters.
+    const streams = (recording.byId.get('streams')?.outputs ?? [])
+      .map((o) => o.stream)
+      .filter((s, i, all) => s !== all[i - 1])
+    expect(streams).toEqual(['stdout', 'stderr'])
+    expect(recording.byId.get('alias-check')?.status).toBe('ok')
+    expect(recording.byId.get('alias-state')?.kernel).toBe('bash')
   })
 })

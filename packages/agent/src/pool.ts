@@ -1,30 +1,46 @@
+import { sessionKey } from '@runtpt/core'
 import type { KernelId } from '@runtpt/protocol'
 import { createSession } from './kernels/index.js'
 import type { KernelSession } from './kernels/types.js'
 
-/** One session per kernel id, created on first use and kept until shutdown. */
+/** What a caller asks the pool for: a kernel, optionally pinned to one binary. */
+export interface KernelTarget {
+  kernel: KernelId
+  interpreter?: string
+}
+
+/** One session per kernel *and* interpreter, created on first use and kept until shutdown. */
 export class KernelPool {
-  private readonly sessions = new Map<KernelId, KernelSession>()
+  private readonly sessions = new Map<string, KernelSession>()
 
   constructor(private readonly opts: { cwd: string; env?: Record<string, string> }) {}
 
-  async get(kernel: KernelId): Promise<KernelSession> {
-    const existing = this.sessions.get(kernel)
+  async get(target: KernelTarget): Promise<KernelSession> {
+    const key = sessionKey(target)
+    const existing = this.sessions.get(key)
     if (existing) return existing
-    const session = createSession(kernel, this.opts)
-    this.sessions.set(kernel, session)
+    const session = createSession(target.kernel, {
+      ...this.opts,
+      ...(target.interpreter ? { interpreter: target.interpreter } : {}),
+    })
+    this.sessions.set(key, session)
     await session.start()
     return session
   }
 
-  peek(kernel: KernelId): KernelSession | undefined {
-    return this.sessions.get(kernel)
+  peek(target: KernelTarget): KernelSession | undefined {
+    return this.sessions.get(sessionKey(target))
   }
 
-  async restart(kernel: KernelId): Promise<void> {
-    const existing = this.sessions.get(kernel)
+  async restart(target: KernelTarget): Promise<void> {
+    const existing = this.sessions.get(sessionKey(target))
     if (!existing) return
     await existing.restart()
+  }
+
+  /** Called when a browser session ends: its variables must not outlive it. */
+  clearInjectedEnv(): void {
+    for (const session of this.sessions.values()) session.clearInjectedEnv()
   }
 
   disposeAll(): void {

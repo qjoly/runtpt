@@ -27,6 +27,12 @@ export interface KernelSession {
   write(data: string): void
   restart(): Promise<void>
   dispose(): void
+  /**
+   * Forgets the variables runtpt injected, leaving whatever the operator's own
+   * commands exported. Session variables are promised to die with the browser
+   * session, and a persistent shell outlives it.
+   */
+  clearInjectedEnv(): void
 }
 
 export const SENTINEL = '__RUNTPT_END__'

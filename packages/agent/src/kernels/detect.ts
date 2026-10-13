@@ -5,11 +5,12 @@ import type { KernelId, KernelInfo } from '@runtpt/protocol'
 /** PATH lookup without spawning anything, so startup stays cheap. */
 export function which(bin: string): string | null {
   if (bin.includes(path.sep)) {
-    try { accessSync(bin, constants.X_OK); return bin } catch { return null }
+    const absolute = path.resolve(bin)
+    try { accessSync(absolute, constants.X_OK); return absolute } catch { return null }
   }
   const dirs = (process.env.PATH ?? '').split(path.delimiter).filter(Boolean)
   for (const dir of dirs) {
-    const candidate = path.join(dir, bin)
+    const candidate = path.resolve(dir, bin)
     try {
       accessSync(candidate, constants.X_OK)
       return candidate
@@ -38,8 +39,14 @@ export function detectKernels(): KernelInfo[] {
       infos.push({ id: 'http', available: typeof fetch === 'function', detail: 'fetch' })
       continue
     }
+    // The web UI builds its shell picker from this list, so an unavailable
+    // kernel has to be reported as such rather than omitted.
     const resolved = binaryFor(kernel)
-    infos.push({ id: kernel, available: resolved !== null, ...(resolved ? { detail: resolved } : {}) })
+    infos.push({
+      id: kernel,
+      available: resolved !== null,
+      ...(resolved ? { detail: resolved, path: resolved } : {}),
+    })
   }
   return infos
 }

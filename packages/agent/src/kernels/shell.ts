@@ -19,7 +19,7 @@ interface Pending {
 }
 
 /**
- * One long-lived shell per kernel, so `cd` and exported variables survive from
+ * One long-lived shell per kernel and interpreter, so `cd` and exported variables survive from
  * one cell to the next (FR-E4). Command boundaries and exit codes come back
  * through a sentinel line printed on both streams.
  */
@@ -32,13 +32,14 @@ export class ShellSession implements KernelSession {
 
   constructor(
     readonly id: KernelId,
-    private readonly bin: string,
+    /** Absolute path of the interpreter to spawn: two paths are two sessions. */
+    readonly interpreter: string,
     private readonly opts: { cwd: string; env?: Record<string, string> },
   ) {}
 
   async start(): Promise<void> {
     if (this.proc) return
-    const child = spawn(this.bin, [], {
+    const child = spawn(this.interpreter, [], {
       cwd: this.opts.cwd,
       env: { ...process.env, ...this.opts.env },
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -88,6 +89,20 @@ export class ShellSession implements KernelSession {
     p.resolve({ status, exit, durationMs: Date.now() - p.startedAt })
   }
 
+  /** Keys this session exported on runtpt's behalf, not the operator's. */
+  private injected = new Set<string>()
+
+  clearInjectedEnv(): void {
+    if (this.injected.size === 0 || !this.proc) return
+    const names = [...this.injected].join(' ')
+    this.injected.clear()
+    try {
+      this.proc.stdin?.write(`unset ${names}\n`)
+    } catch {
+      // A dead shell has nothing left to leak.
+    }
+  }
+
   async exec(req: ExecRequest, sink: ExecSink): Promise<ExecOutcome> {
     if (this.pending) throw new Error('shell session is busy')
     if (!this.proc) await this.start()
@@ -96,6 +111,9 @@ export class ShellSession implements KernelSession {
 
     const nonce = randomBytes(12).toString('hex')
     const marker = markerFor(nonce)
+    // A variable dropped from the panel must stop reaching the next cell.
+    const stale = [...this.injected].filter((k) => !(k in (req.env ?? {})))
+    this.injected = new Set(Object.keys(req.env ?? {}))
 
     return await new Promise<ExecOutcome>((resolve) => {
       const pending: Pending = {
@@ -139,7 +157,7 @@ export class ShellSession implements KernelSession {
       this.carryErr = ''
       this.pending = pending
 
-      proc.stdin.write(buildScript(req, nonce))
+      proc.stdin.write(buildScript(req, nonce, stale))
 
       if (req.timeoutMs && req.timeoutMs > 0) {
         pending.timers.push(setTimeout(() => this.interrupt(pending, 'timeout'), req.timeoutMs))
@@ -200,8 +218,10 @@ export class ShellSession implements KernelSession {
   }
 }
 
-function buildScript(req: ExecRequest, nonce: string): string {
+/** Plain POSIX shell: `sh` is dash on most Linux boxes, so no bashisms here. */
+function buildScript(req: ExecRequest, nonce: string, stale: string[] = []): string {
   const lines: string[] = []
+  if (stale.length > 0) lines.push(`unset ${stale.join(' ')}`)
   for (const [key, value] of Object.entries(req.env ?? {})) {
     if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) lines.push(`export ${key}=${shellQuote(value)}`)
   }

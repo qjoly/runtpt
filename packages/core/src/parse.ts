@@ -1,11 +1,13 @@
 import { parse as parseYaml } from 'yaml'
 import type { KernelId } from '@runtpt/protocol'
 import { isKernel, parseInfoString } from './attrs.js'
+import { parseShellChoice } from './kernel.js'
 import { cellHash } from './hash.js'
 import {
   DEFAULT_SETTINGS,
   type Block,
   type Cell,
+  type CellKernel,
   type Diagnostic,
   type ParamSpec,
   type Runbook,
@@ -83,7 +85,9 @@ function readParams(value: unknown, diagnostics: Diagnostic[]): ParamSpec[] {
 function readSettings(fm: Record<string, unknown> | null, diagnostics: Diagnostic[]): RuntptSettings {
   const settings: RuntptSettings = {
     ...DEFAULT_SETTINGS,
+    shell: { ...DEFAULT_SETTINGS.shell },
     env: {},
+    interpreters: {},
     params: [],
     presentation: { ...DEFAULT_SETTINGS.presentation },
   }
@@ -94,9 +98,16 @@ function readSettings(fm: Record<string, unknown> | null, diagnostics: Diagnosti
   const o = raw as Record<string, unknown>
 
   const shell = asString(o.shell)
-  if (shell) {
-    if (isKernel(shell)) settings.shell = shell as KernelId
-    else diagnostics.push({ level: 'warn', message: `Unknown shell "${shell}", falling back to bash` })
+  if (shell) settings.shell = parseShellChoice(shell, diagnostics)
+
+  if (typeof o.interpreters === 'object' && o.interpreters !== null) {
+    for (const [name, value] of Object.entries(o.interpreters as Record<string, unknown>)) {
+      if (!isKernel(name) || name === 'shell') {
+        diagnostics.push({ level: 'warn', message: `No kernel named "${name}" to give an interpreter to` })
+        continue
+      }
+      settings.interpreters[name as KernelId] = String(value)
+    }
   }
 
   const cwd = asString(o.cwd)
@@ -259,7 +270,7 @@ export function parseRunbook(source: string, diagnostics: Diagnostic[] = []): Ru
 
     flushProse(i)
     const partial = {
-      kernel: parsed.lang as KernelId,
+      kernel: parsed.lang as CellKernel,
       source: sourceText,
       hash: cellHash(sourceText),
       attrs: parsed.attrs,

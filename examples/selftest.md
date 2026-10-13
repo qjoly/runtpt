@@ -43,3 +43,16 @@ echo "this must not appear in the recording"
 echo "to stdout"
 echo "to stderr" >&2
 ```
+
+## The `shell` alias resolves to the configured shell
+
+```shell run id=alias-state
+RUNTPT_ALIAS=ok
+export RUNTPT_ALIAS
+echo "alias runs under $0"
+```
+
+```shell run id=alias-check depends=alias-state
+test "$RUNTPT_ALIAS" = "ok" || { echo "the alias session did not persist"; exit 1; }
+echo "alias ok"
+```

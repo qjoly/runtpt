@@ -117,3 +117,60 @@ describeShell('ShellSession', () => {
     expect(after.out.trim()).toBe('/')
   })
 })
+
+// `sh` is dash on most Linux distributions, so the sentinel protocol has to
+// hold without any bashism.
+for (const dialect of ['sh', 'zsh'] as const) {
+  const bin = which(dialect)
+  const describeDialect = bin ? describe : describe.skip
+
+  describeDialect(`ShellSession (${dialect})`, () => {
+    let session: ShellSession | null = null
+
+    afterEach(() => {
+      session?.dispose()
+      session = null
+    })
+
+    const open = (): ShellSession => {
+      session = new ShellSession(dialect, bin!, { cwd: os.tmpdir() })
+      return session
+    }
+
+    it('keeps state across cells and reports exit codes', async () => {
+      const s = open()
+      await s.start()
+
+      const first = collector()
+      expect((await s.exec({ source: 'RUNTPT_MARK=7\nexport RUNTPT_MARK\ncd /' }, first)).status).toBe('ok')
+
+      const second = collector()
+      await s.exec({ source: 'echo "$RUNTPT_MARK at $PWD"' }, second)
+      expect(second.out).toBe('7 at /\n')
+
+      const third = collector()
+      const failed = await s.exec({ source: 'echo nope >&2\nfalse' }, third)
+      expect(failed.status).toBe('failed')
+      expect(failed.exit).toBe(1)
+      expect(third.err).toContain('nope')
+    })
+
+    it('spawns the interpreter it was handed', async () => {
+      const s = open()
+      const sink = collector()
+      await s.exec({ source: 'echo "$0"' }, sink)
+      expect(sink.out).toContain(bin!)
+    })
+
+    it('runs a cell in a per-cell directory without moving the session', async () => {
+      const s = open()
+      await s.exec({ source: 'cd /' }, collector())
+      const sink = collector()
+      await s.exec({ source: 'pwd', cwd: os.tmpdir() }, sink)
+      expect(sink.out).toContain(os.tmpdir())
+      const after = collector()
+      await s.exec({ source: 'pwd' }, after)
+      expect(after.out.trim()).toBe('/')
+    })
+  })
+}

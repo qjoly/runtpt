@@ -10,7 +10,9 @@ renderers ignore.
 ---
 title: Rotate the cluster certificates
 runtpt:
-  shell: bash
+  shell: bash                    # or a path: /opt/homebrew/bin/bash
+  interpreters:
+    python: /usr/bin/python3.12
   cwd: .
   env:
     KUBECONFIG: ~/.kube/config
@@ -58,11 +60,20 @@ This keeps existing documentation inert until someone opts a block in.
 | `cwd=./infra` | working directory for this cell only |
 | `output=text\|json\|table\|chart` | how to render the result |
 | `interactive` | attach a terminal; the cell expects input |
+| `interpreter=/path` | run this cell with a specific binary |
 
 ### Kernels
 
-- `bash` / `sh` / `zsh` — a persistent shell session per runbook. Exported variables and
-  `cd` persist across cells.
+- `shell` — **the runbook's shell**, whatever `shell:` says, overridable for a session
+  from the web app or with `runtpt run --shell`. Write `shell` when the commands are
+  portable and you do not care which shell runs them.
+- `bash` / `sh` / `zsh` — a *pinned* shell. A cell that says `bash` always gets bash: the
+  session override does not touch it, and the badge never claims one shell while another
+  runs. Pin when the cell uses a dialect feature; use `shell` otherwise.
+
+  Either way it is a persistent session, so exported variables and `cd` survive from one
+  cell to the next. Sessions are keyed by interpreter as well as by kernel, so two cells
+  asking for different `bash` paths get two independent shells.
 - `python` — a persistent interpreter. Last-expression value is displayed; rich display
   follows the Jupyter mimebundle convention where practical.
 - `http` — a declarative request block:
@@ -77,11 +88,26 @@ This keeps existing documentation inert until someone opts a block in.
   The response status, headers and body are the output; JSON is pretty-printed and
   foldable.
 
-## Parameters
+## Parameters and variables
 
 `{{ NAME }}` is substituted before execution, from frontmatter params and from values
 entered at run time. Cells also receive them as environment variables. The UI always
 shows the resolved command before running, so substitution is never invisible.
+
+Three sources feed a cell's environment, in increasing precedence:
+
+1. frontmatter `env` — committed with the runbook, the same for everyone;
+2. **session variables** — typed in the web app or passed with `runtpt run --env K=V`,
+   never written anywhere, gone when the tab closes. This is where a token belongs;
+3. resolved parameters — the declared inputs of this particular run.
+
+A session variable can be marked secret, which registers it with the agent's redactor
+exactly like a secret parameter: it is replaced by `«redacted:NAME»` before any output
+reaches the browser or the `.runtpt`.
+
+Closing the tab really does forget them: the agent unsets the variables it injected when
+the connection drops, so a token does not linger in a shell that outlives the browser.
+What your own commands exported stays, because that is session state you asked for.
 
 ## Speaker notes
 

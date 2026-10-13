@@ -16,7 +16,7 @@ describe('examples/hello.md', () => {
   it('finds the three documented cells', () => {
     expect(rb.cells.map((c) => [c.id, c.kernel])).toEqual([
       ['check-nodes', 'bash'],
-      ['check-pods', 'bash'],
+      ['check-pods', 'shell'],
       ['health', 'http'],
     ])
   })

@@ -135,6 +135,10 @@ export class HttpSession implements KernelSession {
     this.cancel()
   }
 
+  clearInjectedEnv(): void {
+    // Nothing persists between requests, so there is nothing to forget.
+  }
+
   dispose(): void {
     this.cancel()
   }

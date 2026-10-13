@@ -16,6 +16,8 @@ export interface KernelInfo {
   available: boolean
   /** Interpreter path or version string, when it could be detected. */
   detail?: string
+  /** Resolved absolute path, when the agent found one on PATH. */
+  path?: string
 }
 
 export interface HostInfo {
@@ -69,6 +71,11 @@ export interface RunMsg {
   env?: Record<string, string>
   cwd?: string
   timeoutMs?: number
+  /**
+   * Explicit interpreter path. Sessions are keyed by kernel *and* interpreter,
+   * so two bash paths are two independent shells.
+   */
+  interpreter?: string
 }
 
 export interface CancelMsg {
@@ -87,6 +94,7 @@ export interface StdinMsg {
 export interface RestartMsg {
   t: 'restart'
   kernel: KernelId
+  interpreter?: string
 }
 
 /** Tell the agent which values must never reach disk or the wire. */
@@ -200,6 +208,7 @@ export interface KernelStateMsg {
   kernel: KernelId
   state: 'starting' | 'ready' | 'restarting' | 'dead'
   detail?: string
+  interpreter?: string
 }
 
 export type ServerMessage =

@@ -1,15 +1,22 @@
 import path from 'node:path'
-import type { Cell, CellOutcome, Runbook } from '@runtpt/core'
-import { buildPlan, shouldSkip, substitute } from '@runtpt/core'
+import type { Cell, CellOutcome, ResolvedKernel, Runbook, ShellChoice } from '@runtpt/core'
+import { buildPlan, resolveKernel, shouldSkip, substitute } from '@runtpt/core'
 import type { ExecOutcome } from './kernels/types.js'
 import type { KernelPool } from './pool.js'
 
 export interface RunnerEvents {
-  onCellStart?(cell: Cell, source: string, index: number, total: number): void
+  onCellStart?(cell: Cell, source: string, index: number, total: number, resolved: ResolvedKernel): void
   onChunk?(cell: Cell, stream: 'stdout' | 'stderr', data: string): void
   onDisplay?(cell: Cell, mime: string, data: string, encoding?: 'base64'): void
   onCellEnd?(cell: Cell, outcome: ExecOutcome, tolerated: boolean): void
-  onCellSkipped?(cell: Cell, source: string, reason: string, index: number, total: number): void
+  onCellSkipped?(
+    cell: Cell,
+    source: string,
+    reason: string,
+    index: number,
+    total: number,
+    resolved: ResolvedKernel,
+  ): void
 }
 
 export interface RunOptions {
@@ -20,6 +27,10 @@ export interface RunOptions {
   /** Headless runs refuse `confirm` cells unless the operator said so explicitly. */
   allowConfirm?: boolean
   defaultTimeoutMs?: number
+  /** Session-level answer to `shell` cells. Cells that pinned a kernel ignore it. */
+  shellOverride?: ShellChoice | null
+  /** Extra variables, above the runbook's `env` but below resolved params. */
+  extraEnv?: Record<string, string>
   only?: string[]
   events?: RunnerEvents
   signal?: AbortSignal
@@ -51,21 +62,25 @@ export async function runPlan(opts: RunOptions): Promise<RunSummary> {
     const step = plan.steps[i]!
     const cell = step.cell
     const source = substitute(cell.source, params)
+    const resolved = resolveKernel(cell, runbook.settings, opts.shellOverride ?? null)
 
     const reason = skipReason(step, outcomes, summary.aborted, cell, opts)
     if (reason) {
       outcomes.set(cell.id, 'skipped')
       summary.skipped++
-      events?.onCellSkipped?.(cell, source, reason, i, total)
+      events?.onCellSkipped?.(cell, source, reason, i, total, resolved)
       continue
     }
 
-    events?.onCellStart?.(cell, source, i, total)
+    events?.onCellStart?.(cell, source, i, total, resolved)
 
     let outcome: ExecOutcome
     try {
-      const session = await pool.get(cell.kernel)
-      const env = { ...runbook.settings.env, ...params }
+      const session = await pool.get({
+        kernel: resolved.kernel,
+        ...(resolved.interpreter ? { interpreter: resolved.interpreter } : {}),
+      })
+      const env = { ...runbook.settings.env, ...opts.extraEnv, ...params }
       const cwd = cellCwd(opts, cell)
       outcome = await session.exec(
         {

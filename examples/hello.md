@@ -28,7 +28,7 @@ If this hangs, it is almost always the VPN, not the cluster.
 
 ## Workloads
 
-```bash run id=check-pods depends=check-nodes
+```shell run id=check-pods depends=check-nodes
 kubectl --context "$CLUSTER" get pods -A --field-selector=status.phase!=Running
 ```
 

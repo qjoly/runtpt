@@ -23,6 +23,8 @@ export interface RunRequest {
   env?: Record<string, string>
   cwd?: string
   timeoutMs?: number
+  /** Resolved by the browser: the agent picks nothing. */
+  interpreter?: string
 }
 
 export type AgentEvent = ServerMessage

@@ -9,12 +9,11 @@ import {
   parseClientMessage,
   type ClientMessage,
   type DirEntry,
-  type KernelId,
   type ServerMessage,
 } from '@runtpt/protocol'
 import { WebSocketServer, type WebSocket } from 'ws'
 import { detectKernels } from './kernels/detect.js'
-import { KernelPool } from './pool.js'
+import { KernelPool, type KernelTarget } from './pool.js'
 import { relativeToRoot, resolveInRoot } from './paths.js'
 
 export const AGENT_VERSION = '0.1.0'
@@ -67,7 +66,7 @@ interface Connection {
   ws: WebSocket
   paired: boolean
   seq: number
-  active: Map<string, KernelId>
+  active: Map<string, KernelTarget>
 }
 
 export class AgentServer {
@@ -135,8 +134,11 @@ export class AgentServer {
     })
     ws.on('close', () => {
       clearTimeout(timer)
-      for (const [, kernel] of conn.active) this.pool.peek(kernel)?.cancel()
+      for (const [, target] of conn.active) this.pool.peek(target)?.cancel()
       conn.active.clear()
+      // The shell outlives the tab; the variables the tab injected must not.
+      this.redactor.clear()
+      this.pool.clearInjectedEnv()
     })
   }
 
@@ -208,24 +210,31 @@ export class AgentServer {
         return this.run(conn, msg)
 
       case 'cancel': {
-        const kernel = conn.active.get(key(msg.runId, msg.cellId))
-        if (kernel) this.pool.peek(kernel)?.cancel()
+        const target = conn.active.get(key(msg.runId, msg.cellId))
+        if (target) this.pool.peek(target)?.cancel()
         return
       }
 
       case 'stdin': {
-        const kernel = conn.active.get(key(msg.runId, msg.cellId))
-        if (kernel) this.pool.peek(kernel)?.write(msg.data)
+        const target = conn.active.get(key(msg.runId, msg.cellId))
+        if (target) this.pool.peek(target)?.write(msg.data)
         return
       }
 
       case 'restart': {
-        send(conn.ws, { t: 'kernelState', kernel: msg.kernel, state: 'restarting' })
+        // The browser resolved the alias already; what arrives here is the
+        // concrete kernel, plus the interpreter that identifies the session.
+        const target: KernelTarget = {
+          kernel: msg.kernel,
+          ...(msg.interpreter ? { interpreter: msg.interpreter } : {}),
+        }
+        const state = { kernel: msg.kernel, ...(msg.interpreter ? { interpreter: msg.interpreter } : {}) }
+        send(conn.ws, { t: 'kernelState', ...state, state: 'restarting' })
         try {
-          await this.pool.restart(msg.kernel)
-          send(conn.ws, { t: 'kernelState', kernel: msg.kernel, state: 'ready' })
+          await this.pool.restart(target)
+          send(conn.ws, { t: 'kernelState', ...state, state: 'ready' })
         } catch (err) {
-          send(conn.ws, { t: 'kernelState', kernel: msg.kernel, state: 'dead', detail: (err as Error).message })
+          send(conn.ws, { t: 'kernelState', ...state, state: 'dead', detail: (err as Error).message })
         }
         return
       }
@@ -291,10 +300,14 @@ export class AgentServer {
       cwd = resolved
     }
 
-    conn.active.set(slot, msg.kernel)
+    const target: KernelTarget = {
+      kernel: msg.kernel,
+      ...(msg.interpreter ? { interpreter: msg.interpreter } : {}),
+    }
+    conn.active.set(slot, target)
     const startedAt = Date.now()
     try {
-      const session = await this.pool.get(msg.kernel)
+      const session = await this.pool.get(target)
       const outcome = await session.exec(
         {
           source: msg.source,

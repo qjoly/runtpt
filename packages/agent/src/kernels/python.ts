@@ -64,13 +64,14 @@ export class PythonSession implements KernelSession {
   private carryErr = ''
 
   constructor(
-    private readonly bin: string,
+    /** Absolute path of the interpreter, e.g. a specific python3.x. */
+    readonly interpreter: string,
     private readonly opts: { cwd: string; env?: Record<string, string> },
   ) {}
 
   async start(): Promise<void> {
     if (this.proc) return
-    const child = spawn(this.bin, ['-u', '-c', DRIVER], {
+    const child = spawn(this.interpreter, ['-u', '-c', DRIVER], {
       cwd: this.opts.cwd,
       env: { ...process.env, ...this.opts.env, PYTHONUNBUFFERED: '1' },
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -112,6 +113,18 @@ export class PythonSession implements KernelSession {
     p.resolve({ status, exit, durationMs: Date.now() - p.startedAt })
   }
 
+  /** Keys this session set on runtpt's behalf, not the operator's. */
+  private injected = new Set<string>()
+
+  clearInjectedEnv(): void {
+    if (this.injected.size === 0) return
+    this.pendingUnset = [...this.injected]
+    this.injected.clear()
+  }
+
+  /** Applied on the next cell: the interpreter only runs when we feed it one. */
+  private pendingUnset: string[] = []
+
   async exec(req: ExecRequest, sink: ExecSink): Promise<ExecOutcome> {
     if (this.pending) throw new Error('python session is busy')
     if (!this.proc) await this.start()
@@ -120,7 +133,10 @@ export class PythonSession implements KernelSession {
 
     const nonce = randomBytes(12).toString('hex')
     const marker = markerFor(nonce)
-    const prelude = preludeFor(req)
+    const stale = [...this.pendingUnset, ...[...this.injected].filter((k) => !(k in (req.env ?? {})))]
+    this.pendingUnset = []
+    this.injected = new Set(Object.keys(req.env ?? {}))
+    const prelude = preludeFor(req, stale)
 
     return await new Promise<ExecOutcome>((resolve) => {
       const pending: Pending = {
@@ -216,10 +232,11 @@ export class PythonSession implements KernelSession {
 }
 
 /** Per-cell env and cwd, applied inside the interpreter rather than per process. */
-function preludeFor(req: ExecRequest): string {
+function preludeFor(req: ExecRequest, stale: string[] = []): string {
   const lines: string[] = []
   const env = Object.entries(req.env ?? {})
-  if (env.length > 0 || req.cwd) lines.push('import os as _rt_os')
+  if (env.length > 0 || req.cwd || stale.length > 0) lines.push('import os as _rt_os')
+  for (const key of stale) lines.push(`_rt_os.environ.pop(${JSON.stringify(key)}, None)`)
   for (const [key, value] of env) {
     lines.push(`_rt_os.environ[${JSON.stringify(key)}] = ${JSON.stringify(value)}`)
   }

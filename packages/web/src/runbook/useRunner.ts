@@ -1,16 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  DEFAULT_SETTINGS,
   buildPlan,
+  resolveKernel,
   resolveParams,
   shouldSkip,
   substitute,
   type Cell,
   type CellOutcome,
+  type ResolvedKernel,
   type Runbook,
 } from '@runtpt/core'
 import { Redactor, RuntptWriter, type RunRecording } from '@runtpt/format'
 import type { CellStatus, HostInfo } from '@runtpt/protocol'
 import type { AgentApi } from '../agent/useAgent.js'
+import type { SessionApi } from '../session/useSession.js'
+import { mergeRunEnv } from '../session/vars.js'
 import { runbookRefOf, type DocSource } from '../types.js'
 
 export type CellPhase = 'idle' | 'running' | CellStatus
@@ -30,6 +35,8 @@ export interface CellState {
   startedAt: string | null
   /** Skip reason, agent error, or "replayed from a recording". */
   note: string | null
+  /** What this output was actually produced by, so a later shell change cannot rewrite history. */
+  ran: ResolvedKernel | null
 }
 
 export interface ConfirmRequest {
@@ -38,7 +45,15 @@ export interface ConfirmRequest {
   decide: (go: boolean) => void
 }
 
-const EMPTY: CellState = { phase: 'idle', chunks: [], exit: null, durationMs: null, startedAt: null, note: null }
+const EMPTY: CellState = {
+  phase: 'idle',
+  chunks: [],
+  exit: null,
+  durationMs: null,
+  startedAt: null,
+  note: null,
+  ran: null,
+}
 
 export interface Runner {
   states: Record<string, CellState>
@@ -81,6 +96,7 @@ export function useRunner(
   source: DocSource | null,
   agent: AgentApi,
   recording: RunRecording | null,
+  session: SessionApi,
 ): Runner {
   const [states, setStates] = useState<Record<string, CellState>>({})
   const [params, setParamsState] = useState<Record<string, string>>({})
@@ -126,6 +142,7 @@ export function useRunner(
       const value = resolved.values[name]
       if (value) secretValues[name] = value
     }
+    Object.assign(secretValues, session.secrets)
     redactor.current.addAll(secretValues)
     if (agent.status === 'paired' && Object.keys(secretValues).length > 0) {
       try {
@@ -134,7 +151,7 @@ export function useRunner(
         // Not fatal: local redaction still applies to everything we write.
       }
     }
-  }, [resolved, agent])
+  }, [resolved, agent, session.secrets])
 
   const patch = useCallback((cellId: string, next: Partial<CellState>) => {
     setStates((prev) => ({ ...prev, [cellId]: { ...(prev[cellId] ?? EMPTY), ...next } }))
@@ -193,11 +210,12 @@ export function useRunner(
       const runId = newRunId()
       const text = substitute(cell.source, resolved.values)
       const startedAt = new Date().toISOString()
+      const kernel = resolveKernel(cell, runbook?.settings ?? DEFAULT_SETTINGS, session.shellOverride)
 
       w?.cell({
         id: cell.id,
         hash: cell.hash,
-        kernel: cell.kernel,
+        kernel: kernel.kernel,
         source: text,
         started: startedAt,
         ...(cell.attrs.name ? { name: cell.attrs.name } : {}),
@@ -206,7 +224,15 @@ export function useRunner(
       setError(null)
       setRunningCellId(cell.id)
       active.current = { runId, cellId: cell.id }
-      patch(cell.id, { phase: 'running', chunks: [], exit: null, durationMs: null, startedAt, note: null })
+      patch(cell.id, {
+        phase: 'running',
+        chunks: [],
+        exit: null,
+        durationMs: null,
+        startedAt,
+        note: null,
+        ran: kernel,
+      })
 
       return new Promise<CellPhase>((done) => {
         const unsubscribe = agent.subscribe((event) => {
@@ -278,9 +304,10 @@ export function useRunner(
           agent.run({
             runId,
             cellId: cell.id,
-            kernel: cell.kernel,
+            kernel: kernel.kernel,
             source: text,
-            env: { ...(runbook?.settings.env ?? {}), ...resolved.values },
+            env: mergeRunEnv(runbook?.settings.env ?? {}, session.env, resolved.values),
+            ...(kernel.interpreter ? { interpreter: kernel.interpreter } : {}),
             ...(cwd ? { cwd } : {}),
             ...(cell.attrs.timeoutMs ? { timeoutMs: cell.attrs.timeoutMs } : {}),
           })
@@ -294,7 +321,7 @@ export function useRunner(
         }
       })
     },
-    [agent, ensureWriter, flush, patch, push, resolved.values, runbook],
+    [agent, ensureWriter, flush, patch, push, resolved.values, runbook, session.env, session.shellOverride],
   )
 
   const askConfirm = useCallback(
@@ -333,7 +360,12 @@ export function useRunner(
         if (skip) {
           outcomes.set(cell.id, 'skipped')
           patch(cell.id, { phase: 'skipped', note: `Skipped: ${skip}`, chunks: [] })
-          w?.cell({ id: cell.id, hash: cell.hash, kernel: cell.kernel, source: substitute(cell.source, resolved.values) })
+          w?.cell({
+            id: cell.id,
+            hash: cell.hash,
+            kernel: resolveKernel(cell, runbook.settings, session.shellOverride).kernel,
+            source: substitute(cell.source, resolved.values),
+          })
           w?.result({ id: cell.id, status: 'skipped', exit: null, durationMs: 0 })
           continue
         }
@@ -343,7 +375,12 @@ export function useRunner(
           if (!go) {
             outcomes.set(cell.id, 'skipped')
             patch(cell.id, { phase: 'skipped', note: 'Skipped: not confirmed', chunks: [] })
-            w?.cell({ id: cell.id, hash: cell.hash, kernel: cell.kernel, source: substitute(cell.source, resolved.values) })
+            w?.cell({
+            id: cell.id,
+            hash: cell.hash,
+            kernel: resolveKernel(cell, runbook.settings, session.shellOverride).kernel,
+            source: substitute(cell.source, resolved.values),
+          })
             w?.result({ id: cell.id, status: 'skipped', exit: null, durationMs: 0 })
             continue
           }
@@ -358,7 +395,7 @@ export function useRunner(
       setRuntptText(lines.current.join('\n') + '\n')
       setBusy(false)
     }
-  }, [agent.status, askConfirm, busy, ensureWriter, patch, resolved.values, runbook, runCell])
+  }, [agent.status, askConfirm, busy, ensureWriter, patch, resolved.values, runbook, runCell, session.shellOverride])
 
   const cancel = useCallback(() => {
     abort.current = true
@@ -389,6 +426,7 @@ export function useRunner(
         durationMs: recorded.durationMs,
         startedAt: recorded.started,
         note: 'Replayed from a recording, not executed',
+        ran: null,
       })
       return true
     },

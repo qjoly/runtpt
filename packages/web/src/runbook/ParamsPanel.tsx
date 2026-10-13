@@ -1,14 +1,5 @@
 import type { ParamSpec } from '@runtpt/core'
-import { Modal } from '../ui/Modal.js'
 import type { Runner } from './useRunner.js'
-
-interface Props {
-  specs: ParamSpec[]
-  runner: Runner
-  onClose: () => void
-  /** Confirming resumes whatever the operator was trying to run. */
-  onConfirm: () => void
-}
 
 function Field({ spec, runner }: { spec: ParamSpec; runner: Runner }) {
   const value = runner.params[spec.name] ?? ''
@@ -44,10 +35,9 @@ function Field({ spec, runner }: { spec: ParamSpec; runner: Runner }) {
   )
 }
 
-export function ParamsPanel({ specs, runner, onClose, onConfirm }: Props) {
-  const blocked = runner.missingParams.length > 0
+export function ParamsTab({ specs, runner }: { specs: ParamSpec[]; runner: Runner }) {
   return (
-    <Modal title="Parameters" onClose={onClose}>
+    <div className="stack">
       <p className="hint">
         Values are substituted into <code>{'{{ NAME }}'}</code> placeholders and exported to cells as environment
         variables. Secrets are registered with the agent and redacted from the <code>.runtpt</code>.
@@ -57,19 +47,7 @@ export function ParamsPanel({ specs, runner, onClose, onConfirm }: Props) {
           <Field key={spec.name} spec={spec} runner={runner} />
         ))}
       </div>
-      {blocked && <p className="error">Still missing: {runner.missingParams.join(', ')}</p>}
-      <div className="row end">
-        <button
-          className="primary"
-          disabled={blocked}
-          onClick={() => {
-            runner.markParamsAnswered()
-            onConfirm()
-          }}
-        >
-          Use these values
-        </button>
-      </div>
-    </Modal>
+      {runner.missingParams.length > 0 && <p className="error">Still missing: {runner.missingParams.join(', ')}</p>}
+    </div>
   )
 }
