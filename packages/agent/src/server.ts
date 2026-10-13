@@ -20,7 +20,7 @@ import { KernelPool, type KernelTarget } from './pool.js'
 import { relativeToRoot, resolveInRoot } from './paths.js'
 import { WEB_ASSETS, type EmbeddedAsset } from './web-assets.js'
 
-export const AGENT_VERSION = '0.2.3'
+export const AGENT_VERSION = '0.2.4'
 const PAIRING_TIMEOUT_MS = 10_000
 
 export interface ServerOptions {
