@@ -174,6 +174,7 @@ export function parseRunbook(source: string, diagnostics: Diagnostic[] = []): Ru
   const blocks: Block[] = []
   const cells: Cell[] = []
   const inertFences: InertFence[] = []
+  let declaresRuntpt = fm.data !== null && typeof fm.data.runtpt === 'object' && fm.data.runtpt !== null
   const taken = new Set<string>()
 
   let prose: string[] = []
@@ -264,6 +265,7 @@ export function parseRunbook(source: string, diagnostics: Diagnostic[] = []): Ru
     }
 
     const parsed = parseInfoString(info, diagnostics, i + 1)
+    if (parsed.hasAttrs && isKernel(parsed.lang)) declaresRuntpt = true
     const executable = isKernel(parsed.lang) && (parsed.hasAttrs || settings.cells === 'all')
     const sourceText = body.join('\n')
 
@@ -319,6 +321,7 @@ export function parseRunbook(source: string, diagnostics: Diagnostic[] = []): Ru
     frontmatterRaw: fm.raw,
     blocks,
     cells,
+    declaresRuntpt,
     inertFences,
     source,
     diagnostics,

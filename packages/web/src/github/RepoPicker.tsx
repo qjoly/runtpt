@@ -14,6 +14,7 @@ export function RepoPicker({ token, onOpen, onOpenRecording }: Props) {
   const [branches, setBranches] = useState<GhBranch[]>([])
   const [ref, setRef] = useState('')
   const [entries, setEntries] = useState<GhTreeEntry[] | null>(null)
+  const [truncated, setTruncated] = useState(false)
   const [filter, setFilter] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -32,8 +33,12 @@ export function RepoPicker({ token, onOpen, onOpenRecording }: Props) {
     if (!repo || !ref) return
     setEntries(null)
     setError(null)
+    setTruncated(false)
     listMarkdown(repo.owner.login, repo.name, ref, token)
-      .then(setEntries)
+      .then((listing) => {
+        setEntries(listing.entries)
+        setTruncated(listing.truncated)
+      })
       .catch((err: Error) => setError(err.message))
   }, [repo, ref, token])
 
@@ -129,6 +134,12 @@ export function RepoPicker({ token, onOpen, onOpenRecording }: Props) {
       {error && <p className="error">{error}</p>}
       {!entries && <p className="hint">Loading the tree…</p>}
       {entries && entries.length === 0 && <p className="hint">No markdown in this branch.</p>}
+      {truncated && (
+        <p className="warn-box">
+          GitHub cut this listing short, so some files are missing from it. Paste the
+          file&apos;s URL in <em>From a URL</em> to open it directly.
+        </p>
+      )}
       <div className="scroll-list">
         {visible.map((entry) => (
           <button key={entry.path} className="list-row" disabled={busy} onClick={() => void open(entry)}>

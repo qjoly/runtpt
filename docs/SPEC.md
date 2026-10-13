@@ -231,8 +231,11 @@ The threat worth taking seriously: a web page gets to run commands on a machine.
 - The agent is started by the user, in a directory the user chose, and stops when they
   close it. It is not a daemon by default.
 - Runbooks are code. The UI makes it obvious what a cell will run, shows the resolved
-  command after parameter substitution, and offers a *review before running all* step
-  for a runbook opened from a repository the user does not own.
+  command after parameter substitution, and offers a *review before running all* step in
+  two cases: a repository the user does not own, and a document that never declared
+  itself a runbook — no `runtpt:` frontmatter and no tagged cell. The second case is the
+  one that bites: your own README is not foreign, and it is full of installation lines
+  nobody wrote to be executed in sequence.
 - Tokens stay in the browser. The runtpt origin stores a GitHub token in memory and,
   if the user opts in, in `localStorage`; no runtpt backend ever sees it.
 - `.runtpt` files are redacted for declared secrets, but the spec states plainly that an

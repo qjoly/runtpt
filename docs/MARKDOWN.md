@@ -51,7 +51,11 @@ runtpt:
 ```
 
 In `tagged` mode only a fence carrying `run` (or any other runtpt attribute) becomes a
-cell. Per-cell attributes apply in both modes, so you can still pin an `id`, a `timeout`
+cell.
+
+A document that declares neither — no `runtpt:` block, no tagged fence — still opens and
+still runs, but *Run all* asks you to read the commands first. Opening somebody's
+installation README should not be one click away from executing it. Per-cell attributes apply in both modes, so you can still pin an `id`, a `timeout`
 or a `confirm` where it matters.
 
 ## Executable cells

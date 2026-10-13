@@ -138,6 +138,13 @@ export interface Runbook {
   frontmatterRaw: string | null
   blocks: Block[]
   cells: Cell[]
+  /**
+   * True when something in the document says it is a runbook: a `runtpt:`
+   * frontmatter block, or at least one fence carrying an attribute. A README
+   * full of installation commands says neither, and the difference is worth
+   * knowing before running all of it.
+   */
+  declaresRuntpt: boolean
   /** Runnable-looking fences left inert; the reason a runbook can have no cells. */
   inertFences: InertFence[]
   source: string

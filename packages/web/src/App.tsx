@@ -10,7 +10,7 @@ import { getFile } from './github/api.js'
 import { OpenPanel } from './open/OpenPanel.js'
 import { RunbookView } from './runbook/RunbookView.js'
 import { InputsPanel, type InputsTab } from './runbook/InputsPanel.js'
-import { ReviewPanel } from './runbook/ReviewPanel.js'
+import { ReviewPanel, type ReviewReason } from './runbook/ReviewPanel.js'
 import { SavePanel } from './runbook/SavePanel.js'
 import { useRunner } from './runbook/useRunner.js'
 import { ReplayView } from './replay/ReplayView.js'
@@ -31,6 +31,7 @@ export function App() {
   const [doc, setDoc] = useState<LoadedDoc>(DEMO_RUNBOOK)
   const [recording, setRecording] = useState<RunRecording | null>(null)
   const [recordingLabel, setRecordingLabel] = useState('')
+  const [reviewReason, setReviewReason] = useState<ReviewReason>('foreign')
   const [view, setView] = useState<'run' | 'replay'>('run')
   const [panel, setPanel] = useState<Panel>(null)
   const [inputsTab, setInputsTab] = useState<InputsTab>('params')
@@ -116,12 +117,17 @@ export function App() {
   const runAllNow = useCallback(() => {
     const owner = doc.source.repo?.owner
     const foreign = doc.source.origin === 'github' && owner !== undefined && owner !== github.user?.login
-    if (foreign) {
+    // A document that never declared itself a runbook is documentation that
+    // happens to contain commands. Your own README is the dangerous case: it is
+    // not foreign, and it is full of installation lines nobody meant to run.
+    const undeclared = runbook !== null && !runbook.declaresRuntpt
+    if (foreign || undeclared) {
+      setReviewReason(foreign ? 'foreign' : 'undeclared')
       setPanel('review')
       return
     }
     void runner.runAll()
-  }, [doc.source, github.user, runner])
+  }, [doc.source, github.user, runbook, runner])
 
   /**
    * A recording only belongs to the document it names. Rendering it over
@@ -466,6 +472,7 @@ export function App() {
           <ReviewPanel
             runbook={runbook}
             runner={runner}
+            reason={reviewReason}
             origin={doc.source.label}
             shellOverride={session.shellOverride}
             onClose={() => setPanel(null)}

@@ -101,3 +101,26 @@ describe('inertFences', () => {
     expect(rb.inertFences[0]!.line).toBe(8)
   })
 })
+
+describe('declaresRuntpt', () => {
+  it('is false for documentation that merely contains commands', () => {
+    expect(parseRunbook('# Install\n\n```bash\nbrew install thing\n```\n').declaresRuntpt).toBe(false)
+  })
+
+  it('is true when the frontmatter carries a runtpt block', () => {
+    expect(parseRunbook('---\nruntpt:\n  shell: zsh\n---\n\ntext\n').declaresRuntpt).toBe(true)
+  })
+
+  it('is true when any fence carries an attribute', () => {
+    expect(parseRunbook('```bash run\n:\n```\n').declaresRuntpt).toBe(true)
+    expect(parseRunbook('```bash id=x\n:\n```\n').declaresRuntpt).toBe(true)
+  })
+
+  it('ignores an attribute on a fence that is not a kernel', () => {
+    expect(parseRunbook('```json run\n{}\n```\n').declaresRuntpt).toBe(false)
+  })
+
+  it('is not fooled by a frontmatter without a runtpt block', () => {
+    expect(parseRunbook('---\ntitle: Notes\n---\n\n```bash\n:\n```\n').declaresRuntpt).toBe(false)
+  })
+})

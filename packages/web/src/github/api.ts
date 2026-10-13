@@ -78,17 +78,30 @@ export const getRepo = (owner: string, repo: string, token: string | null): Prom
 export const listBranches = (owner: string, repo: string, token: string | null): Promise<GhBranch[]> =>
   call<GhBranch[]>(`/repos/${owner}/${repo}/branches?per_page=100`, token)
 
+export interface MarkdownListing {
+  entries: GhTreeEntry[]
+  /**
+   * GitHub caps a recursive tree and says so. Dropping the flag meant a large
+   * repository silently listed only part of its files, and a file you knew was
+   * there simply did not appear.
+   */
+  truncated: boolean
+}
+
 export async function listMarkdown(
   owner: string,
   repo: string,
   ref: string,
   token: string | null,
-): Promise<GhTreeEntry[]> {
+): Promise<MarkdownListing> {
   const tree = await call<{ tree: GhTreeEntry[]; truncated: boolean }>(
     `/repos/${owner}/${repo}/git/trees/${encodeURIComponent(ref)}?recursive=1`,
     token,
   )
-  return tree.tree.filter((e) => e.type === 'blob' && /\.(md|markdown|runtpt)$/i.test(e.path))
+  return {
+    entries: tree.tree.filter((e) => e.type === 'blob' && /\.(md|markdown|runtpt)$/i.test(e.path)),
+    truncated: tree.truncated === true,
+  }
 }
 
 function decodeBase64(data: string): string {
