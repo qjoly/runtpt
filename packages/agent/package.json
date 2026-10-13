@@ -1,6 +1,6 @@
 {
   "name": "@runtpt/agent",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -9,9 +9,9 @@
   "files": ["dist"],
   "scripts": { "build": "tsc -b" },
   "dependencies": {
-    "@runtpt/protocol": "0.2.2",
-    "@runtpt/format": "0.2.2",
-    "@runtpt/core": "0.2.2",
+    "@runtpt/protocol": "0.2.3",
+    "@runtpt/format": "0.2.3",
+    "@runtpt/core": "0.2.3",
     "ws": "^8.18.0"
   },
   "devDependencies": {

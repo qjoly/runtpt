@@ -26,7 +26,7 @@ needed on the machine that runs the cells:
 
 ```bash
 export GITHUB_TOKEN=$(gh auth token)   # the repository is private
-mise use -g github:qjoly/runtpt@0.2.2
+mise use -g github:qjoly/runtpt@0.2.3
 ```
 
 Pin the version. mise skips releases younger than 24 hours by default
