@@ -1,0 +1,54 @@
+# Development environment for runtpt itself.
+# `mise install` then `mise run dev`. See mise.jdx.dev.
+
+[tools]
+node = "22"
+
+[env]
+# Keep npm from touching a global prefix outside the project.
+NPM_CONFIG_FUND = "false"
+
+[tasks.install]
+description = "Install workspace dependencies"
+run = "npm ci"
+sources = ["package-lock.json", "package.json", "packages/*/package.json"]
+outputs = { auto = true }
+
+[tasks.build]
+description = "Build every package"
+depends = ["install"]
+run = "npm run build --workspaces --if-present"
+
+[tasks.typecheck]
+description = "Typecheck the whole workspace"
+depends = ["install"]
+run = "npx tsc -b"
+
+[tasks.test]
+description = "Run the test suite"
+depends = ["install"]
+run = "npx vitest run"
+
+[tasks.check]
+description = "Everything CI runs"
+depends = ["typecheck", "test", "build"]
+
+[tasks.dev]
+description = "Start the web app"
+depends = ["install"]
+run = "npm run dev -w @runtpt/web"
+
+[tasks.agent]
+description = "Start the local agent in the current directory"
+depends = ["build"]
+run = "node packages/agent/dist/cli.js serve"
+
+[tasks.selftest]
+description = "Run the repository's own runbook headlessly"
+depends = ["build"]
+run = "node packages/agent/dist/cli.js run examples/selftest.md --out /tmp/runtpt-selftest.runtpt"
+
+[tasks.bundle]
+description = "Build the standalone agent binary for this machine"
+depends = ["build"]
+run = "node scripts/bundle.mjs"

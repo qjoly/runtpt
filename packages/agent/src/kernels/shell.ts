@@ -23,6 +23,9 @@ interface Pending {
  * one cell to the next (FR-E4). Command boundaries and exit codes come back
  * through a sentinel line printed on both streams.
  */
+/** How long to wait for the pipes to drain after the shell itself has exited. */
+const FLUSH_GRACE_MS = 250
+
 export class ShellSession implements KernelSession {
   private proc: ChildProcessWithoutNullStreams | null = null
   private pending: Pending | null = null
@@ -51,7 +54,16 @@ export class ShellSession implements KernelSession {
     child.stderr.setEncoding('utf8')
     child.stdout.on('data', (d: string) => this.pending?.stdout.push(d))
     child.stderr.on('data', (d: string) => this.pending?.stderr.push(d))
-    child.on('exit', (code, signal) => this.onExit(code, signal))
+    // 'exit' fires as soon as the process ends, while data may still be in the
+    // pipes; 'close' waits for the stdio streams. Settling on 'exit' silently
+    // dropped the output of any cell that called `exit` — the one case where
+    // you most want to see what it printed. The timer is the escape hatch for a
+    // background grandchild holding a pipe open forever.
+    child.on('close', (code, signal) => this.onExit(code, signal))
+    child.on('exit', (code, signal) => {
+      const timer = setTimeout(() => this.onExit(code, signal), FLUSH_GRACE_MS)
+      timer.unref?.()
+    })
     child.on('error', () => this.onExit(null, null))
     this.proc = child
     this.dead = false

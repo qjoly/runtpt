@@ -21,10 +21,20 @@ that happens *to* it, never *inside* it.
 
 ## Quick start
 
+Install the agent with [mise](https://mise.jdx.dev) — a standalone binary, no Node
+needed on the machine that runs the cells:
+
 ```bash
-npm install
-npm run dev                  # the web app, with a demo runbook already loaded
-npx @runtpt/agent serve      # in the directory holding your runbooks
+export GITHUB_TOKEN=$(gh auth token)   # the repository is private
+mise use -g ubi:qjoly/runtpt
+```
+
+Then, from a checkout:
+
+```bash
+mise install                 # or just use your own Node 20+
+mise run dev                 # the web app, with a demo runbook already loaded
+runtpt serve                 # in the directory holding your runbooks
 ```
 
 The agent prints a pairing link. Open it and the browser is wired to your machine —
@@ -95,6 +105,19 @@ affected cells are flagged. If the runbook is missing entirely, the recording st
 renders from what it stored.
 
 ![A recording opened on its own, rendered from recorded sources](docs/images/08-replay.png)
+
+## Working on runtpt
+
+`mise.toml` pins the toolchain and carries the tasks:
+
+| Task | What it does |
+|---|---|
+| `mise run dev` | the web app |
+| `mise run agent` | the local agent, in the current directory |
+| `mise run test` | the test suite |
+| `mise run check` | everything CI runs |
+| `mise run selftest` | the repository's own runbook, headlessly |
+| `mise run bundle` | a standalone binary for this machine |
 
 ## Packages
 

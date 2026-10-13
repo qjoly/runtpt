@@ -56,6 +56,9 @@ interface Pending {
   settled: boolean
 }
 
+/** How long to wait for the pipes to drain after the interpreter has exited. */
+const FLUSH_GRACE_MS = 250
+
 export class PythonSession implements KernelSession {
   readonly id: KernelId = 'python'
   private proc: ChildProcessWithoutNullStreams | null = null
@@ -81,7 +84,14 @@ export class PythonSession implements KernelSession {
     child.stderr.setEncoding('utf8')
     child.stdout.on('data', (d: string) => this.pending?.stdout.push(d))
     child.stderr.on('data', (d: string) => this.pending?.stderr.push(d))
-    child.on('exit', (code, signal) => this.onExit(code, signal))
+    // Same reasoning as the shell session: 'exit' can beat the last stdout
+    // chunk through the pipe, so the traceback of a cell that killed the
+    // interpreter would never reach the operator.
+    child.on('close', (code, signal) => this.onExit(code, signal))
+    child.on('exit', (code, signal) => {
+      const timer = setTimeout(() => this.onExit(code, signal), FLUSH_GRACE_MS)
+      timer.unref?.()
+    })
     child.on('error', () => this.onExit(null, null))
     this.proc = child
     await new Promise((r) => setImmediate(r))

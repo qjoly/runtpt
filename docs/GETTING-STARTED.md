@@ -1,16 +1,44 @@
 # Getting started
 
-## Install
+## Install the agent
+
+### With mise
+
+[mise](https://mise.jdx.dev) installs the standalone binary — no Node required on the
+machine that runs the cells.
+
+```bash
+mise use -g ubi:qjoly/runtpt
+runtpt --version
+```
+
+**The repository is private**, so ubi needs a token with read access to it:
+
+```bash
+export GITHUB_TOKEN=$(gh auth token)       # or GITHUB_API_TOKEN
+mise use -g ubi:qjoly/runtpt
+```
+
+Pin a version rather than tracking the tip once you depend on it:
+
+```bash
+mise use -g ubi:qjoly/runtpt@0.1.0
+```
+
+Released binaries exist for macOS and Linux, on arm64 and x86_64, linked against glibc.
+There is no musl build yet, so Alpine needs the source route below.
+
+### From source
 
 ```bash
 git clone https://github.com/qjoly/runtpt
 cd runtpt
-npm install
-npm run build --workspaces --if-present
+mise install        # pins Node, or use your own Node 20+
+mise run build
 ```
 
-Node 20 or later. Nothing else is required: the Python and HTTP kernels are optional and
-the agent reports which ones it found.
+Without mise, `npm ci && npm run build --workspaces --if-present` does the same thing.
+The Python and HTTP kernels are optional; the agent reports which ones it found.
 
 ## Run a runbook from the browser
 
@@ -23,7 +51,8 @@ npm run dev
 And the agent, **in the directory holding the runbooks you want to run**:
 
 ```bash
-node packages/agent/dist/cli.js serve
+runtpt serve                              # installed binary
+mise run agent                            # from a source checkout
 ```
 
 It prints something like:
