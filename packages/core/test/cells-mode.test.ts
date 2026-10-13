@@ -48,9 +48,22 @@ describe('cells: all', () => {
     expect(rb.cells[0]!.source).toBe('kubectl scale sts mssql --replicas=0')
   })
 
-  it('defaults to tagged, so an unannotated document stays inert', () => {
+  it('is the default, so a runbook written as plain markdown just runs', () => {
     const rb = parseRunbook(DOC.replace('  cells: all\n', ''))
+    expect(rb.settings.cells).toBe('all')
+    expect(rb.cells.map((c) => c.kernel)).toEqual(['bash', 'python'])
+  })
+
+  it('can be opted out of, for a document that merely contains commands', () => {
+    const rb = parseRunbook(DOC.replace('cells: all', 'cells: tagged'))
     expect(rb.cells).toHaveLength(0)
+    expect(rb.inertFences).toHaveLength(2)
+  })
+
+  it('still arms a tagged fence in tagged mode', () => {
+    const rb = parseRunbook('---\nruntpt:\n  cells: tagged\n---\n\n```bash run\n:\n```\n\n```bash\n:\n```\n')
+    expect(rb.cells).toHaveLength(1)
+    expect(rb.inertFences).toHaveLength(1)
   })
 
   it('still honours per-cell attributes in all mode', () => {
@@ -59,32 +72,32 @@ describe('cells: all', () => {
     expect(rb.cells[0]!.attrs.timeoutMs).toBe(5000)
   })
 
-  it('warns on an unknown mode rather than silently arming every fence', () => {
+  it('warns on an unknown mode and keeps the default', () => {
     const rb = parseRunbook('---\nruntpt:\n  cells: everything\n---\n\n```bash\n:\n```\n')
-    expect(rb.settings.cells).toBe('tagged')
-    expect(rb.cells).toHaveLength(0)
+    expect(rb.settings.cells).toBe('all')
     expect(rb.diagnostics.some((d) => /Unknown cells mode/.test(d.message))).toBe(true)
   })
 })
 
 describe('inertFences', () => {
-  it('counts the fences that would run if the document opted in', () => {
-    const rb = parseRunbook('```bash\n:\n```\n\n```yaml\na: 1\n```\n\n```python\npass\n```\n')
+  const TAGGED = '---\nruntpt:\n  cells: tagged\n---\n\n'
+
+  it('counts the fences a tagged document left behind', () => {
+    const rb = parseRunbook(TAGGED + '```bash\n:\n```\n\n```yaml\na: 1\n```\n\n```python\npass\n```\n')
     expect(rb.cells).toHaveLength(0)
     expect(rb.inertFences.map((f) => f.kernel)).toEqual(['bash', 'python'])
   })
 
-  it('is empty once the fences are armed', () => {
-    const rb = parseRunbook('---\nruntpt:\n  cells: all\n---\n\n```bash\n:\n```\n')
-    expect(rb.inertFences).toHaveLength(0)
+  it('is empty under the default, where nothing is left behind', () => {
+    expect(parseRunbook('```bash\n:\n```\n').inertFences).toHaveLength(0)
   })
 
   it('does not count a fence that is not a kernel', () => {
-    expect(parseRunbook('```json\n{}\n```\n').inertFences).toHaveLength(0)
+    expect(parseRunbook(TAGGED + '```json\n{}\n```\n').inertFences).toHaveLength(0)
   })
 
   it('reports where each one is', () => {
-    const rb = parseRunbook('intro\n\n```bash\n:\n```\n')
-    expect(rb.inertFences[0]!.line).toBe(3)
+    const rb = parseRunbook(TAGGED + 'intro\n\n```bash\n:\n```\n')
+    expect(rb.inertFences[0]!.line).toBe(8)
   })
 })

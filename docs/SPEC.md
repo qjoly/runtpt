@@ -26,7 +26,8 @@ Three usages of one artifact:
 ## 3. Principles
 
 - **The markdown is the source of truth.** runtpt never rewrites a runbook to store
-  state. Outputs always land in a separate file.
+  state. Outputs always land in a separate file. A runbook you already have should work
+  as it is, without being annotated into a runtpt dialect.
 - **GitHub-first.** Identity, storage, permissions and history come from GitHub. There
   is no runtpt account, no runtpt database of documents.
 - **Web-first, not web-only.** The UI is a web app; execution is local. Nothing is sent
@@ -108,8 +109,9 @@ slide itself. The run is recorded, so the demo can be replayed later even offlin
 
 ### 7.2 Document model
 
-- `FR-D1` A runbook is CommonMark plus GFM. Executable cells are fenced code blocks
-  whose info string carries runtpt attributes.
+- `FR-D1` A runbook is CommonMark plus GFM. A fenced code block whose language names a
+  kernel is a cell; everything else is prose. A document that only *quotes* commands opts
+  out with `cells: tagged`, where a fence has to carry `run` to become a cell.
 - `FR-D2` Each cell has a stable identity: an explicit `id` attribute, or a content hash
   fallback. Identity is what binds an output in the `.runtpt` to a cell.
 - `FR-D3` Optional YAML frontmatter declares runbook-level settings: title, default
@@ -124,9 +126,9 @@ slide itself. The run is recorded, so the demo can be replayed later even offlin
 - `FR-D13` A runbook that yields no executable cells is reported as a mistake, in the
   CLI and in the UI, naming how many fences were left inert and how to arm them. Silently
   succeeding at running nothing is the worst available outcome for a procedure.
-- `FR-D10` A runbook may arm every fence at once with `cells: all`, for a procedure
-  written as ordinary markdown. The default stays opt-in per fence, so opening existing
-  documentation never makes it executable.
+- `FR-D10` Fences of a known kernel are cells by default, because a runbook is written to
+  be executed. Safety comes from FR-E7 — nothing ever runs without an explicit action —
+  not from pretending the commands are not commands. `cells: tagged` is the opt-out.
 - `FR-D11` Task-list items are tickable during a run and recorded, so a replay shows how
   far the intervention got — a procedure is half commands and half human steps, and a
   recording of only the commands tells half the story.

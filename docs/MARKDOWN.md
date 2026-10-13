@@ -31,23 +31,28 @@ runtpt:
 Everything under `runtpt:` is optional. A runbook with no frontmatter still runs, with
 `bash` in the directory the agent was started from.
 
-### Arming a runbook written as plain markdown
+### Which fences are cells
 
-By default a fence has to opt in, one by one. That is right for documentation that merely
-*contains* commands, and wrong for a procedure written to be executed: nobody is going to
-annotate three hundred fences by hand.
+By default, **every fence whose language is a known kernel is a cell**: `bash`, `sh`,
+`zsh`, `shell`, `python`, `http`. A `yaml`, `diff`, `json` or `text` fence stays prose,
+because it was never a command. A runbook is written to be executed, and nobody annotates
+three hundred fences by hand.
+
+Nothing runs on its own, ever — being a cell means it *can* run when you ask.
+
+For a document that merely *contains* commands — a README, a design note, a tutorial
+quoting a dangerous command — opt out and tag the few fences that really are steps:
 
 ```yaml
 ---
 runtpt:
-  cells: all
+  cells: tagged
 ---
 ```
 
-With `cells: all`, every fence whose language is a known kernel becomes executable; a
-`yaml`, `diff` or `text` fence stays prose, because it was never a command. Per-cell
-attributes still apply on top, so you can still pin an `id`, a `timeout` or a `confirm`
-on the few cells that need one.
+In `tagged` mode only a fence carrying `run` (or any other runtpt attribute) becomes a
+cell. Per-cell attributes apply in both modes, so you can still pin an `id`, a `timeout`
+or a `confirm` where it matters.
 
 ## Executable cells
 
@@ -60,8 +65,9 @@ kubectl --context "$CLUSTER" get nodes
 ```
 ````
 
-A fence with no attributes is **not** executable — it is a plain illustrative snippet.
-This keeps existing documentation inert until someone opts a block in.
+A fence with no attributes is still a cell, as long as its language is a kernel. The
+attributes below refine what happens when you run it; `run` only matters in `tagged`
+mode, where it is what opts a fence in.
 
 ### Attributes
 

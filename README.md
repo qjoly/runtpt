@@ -55,8 +55,9 @@ still works. This repo does exactly that with [`examples/selftest.md`](examples/
 
 ## What a cell looks like
 
-Executable cells are ordinary fenced code blocks. A fence with no runtpt attribute stays
-inert, so existing documentation does not suddenly become executable.
+Executable cells are ordinary fenced code blocks — no dialect to learn. Any fence whose
+language names a kernel is a cell; `yaml`, `diff` and friends stay prose. Nothing runs
+until you ask it to.
 
 ````markdown
 ```shell run id=check-nodes timeout=30s

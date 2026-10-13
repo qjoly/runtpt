@@ -49,11 +49,17 @@ Body.
 })
 
 describe('cell detection', () => {
-  it('leaves a bare fence inert', () => {
+  it('runs a bare fence of a known kernel', () => {
     const rb = parseRunbook('```bash\necho hi\n```\n')
+    expect(rb.cells).toHaveLength(1)
+    expect(rb.cells[0]!.source).toBe('echo hi')
+  })
+
+  it('leaves a bare fence inert in tagged mode', () => {
+    const rb = parseRunbook('---\nruntpt:\n  cells: tagged\n---\n\n```bash\necho hi\n```\n')
     expect(rb.cells).toHaveLength(0)
-    expect(rb.blocks[0]).toMatchObject({ kind: 'prose' })
-    expect((rb.blocks[0] as { markdown: string }).markdown).toContain('echo hi')
+    const prose = rb.blocks.filter((b) => b.kind === 'prose').map((b) => (b as { markdown: string }).markdown).join('')
+    expect(prose).toContain('echo hi')
   })
 
   it('activates a fence carrying the run flag', () => {

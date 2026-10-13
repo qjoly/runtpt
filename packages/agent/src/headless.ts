@@ -68,8 +68,8 @@ export async function runHeadless(opts: HeadlessOptions): Promise<HeadlessResult
     throw new HeadlessError(
       inert > 0
         ? `${displayPath(runbookPath)} has no executable cells, but ${inert} fence${inert > 1 ? 's' : ''} ` +
-          `of a known kernel. Nothing runs until a cell opts in: add \`run\` to the fences you mean to ` +
-          `execute, or arm them all with:\n\n  ---\n  runtpt:\n    cells: all\n  ---`
+          `of a known kernel. It sets \`cells: tagged\`, so only fences carrying \`run\` become cells. ` +
+          `Add \`run\` to the ones you mean to execute, or drop the setting to arm them all.`
         : `${displayPath(runbookPath)} has no executable cells.`,
       2,
     )

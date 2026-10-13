@@ -94,11 +94,12 @@ export interface PresentationSettings {
 }
 
 /**
- * `tagged` (the default) keeps a plain fence inert, so existing documentation does
- * not become executable by being opened. `all` is the opt-in for a runbook written
- * as ordinary markdown: annotating several hundred fences by hand is not a plan.
+ * `all` (the default) makes every fence of a known kernel runnable: a runbook is
+ * written to be executed, and nobody annotates three hundred fences by hand.
+ * `tagged` is the opt-out for a document that merely *contains* commands, where
+ * only the fences carrying `run` become cells.
  */
-export type CellMode = 'tagged' | 'all'
+export type CellMode = 'all' | 'tagged'
 
 export interface RuntptSettings {
   cells: CellMode
@@ -144,7 +145,7 @@ export interface Runbook {
 }
 
 export const DEFAULT_SETTINGS: RuntptSettings = {
-  cells: 'tagged',
+  cells: 'all',
   shell: { kernel: 'bash' },
   env: {},
   interpreters: {},

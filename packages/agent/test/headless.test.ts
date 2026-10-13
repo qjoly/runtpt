@@ -133,17 +133,20 @@ describe('a runbook with nothing to run', () => {
 
   // "0 ok, 0 failed" with exit 0 reads like the procedure went fine.
   it('fails loudly and names the fix when fences were left inert', async () => {
-    const file = write('inert.md', '# Procedure\n\n```bash\necho hi\n```\n\n```bash\necho ho\n```\n')
+    const file = write(
+      'inert.md',
+      '---\nruntpt:\n  cells: tagged\n---\n\n```bash\necho hi\n```\n\n```bash\necho ho\n```\n',
+    )
     await expect(runHeadless({ runbookPath: file, log: () => {} })).rejects.toMatchObject({
       exitCode: 2,
       message: expect.stringContaining('2 fences of a known kernel'),
     })
   })
 
-  it('points at the frontmatter opt-in', async () => {
-    const file = write('inert2.md', '```bash\n:\n```\n')
+  it('points at the way to arm them', async () => {
+    const file = write('inert2.md', '---\nruntpt:\n  cells: tagged\n---\n\n```bash\n:\n```\n')
     await expect(runHeadless({ runbookPath: file, log: () => {} })).rejects.toMatchObject({
-      message: expect.stringContaining('cells: all'),
+      message: expect.stringContaining('cells: tagged'),
     })
   })
 

@@ -100,7 +100,7 @@ function readSettings(fm: Record<string, unknown> | null, diagnostics: Diagnosti
 
   const cells = asString(o.cells)
   if (cells === 'all' || cells === 'tagged') settings.cells = cells
-  else if (cells) diagnostics.push({ level: 'warn', message: `Unknown cells mode "${cells}", keeping "tagged"` })
+  else if (cells) diagnostics.push({ level: 'warn', message: `Unknown cells mode "${cells}", keeping "${settings.cells}"` })
 
   const shell = asString(o.shell)
   if (shell) settings.shell = parseShellChoice(shell, diagnostics)

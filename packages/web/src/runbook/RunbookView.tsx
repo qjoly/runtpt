@@ -67,10 +67,10 @@ export function RunbookView({
       {runbook.cells.length === 0 && runbook.inertFences.length > 0 && (
         <p className="warn-box">
           Nothing here can run. {runbook.inertFences.length} code{' '}
-          {runbook.inertFences.length === 1 ? 'block looks' : 'blocks look'} runnable but
-          no cell opted in. Add <code>run</code> to the blocks you mean to execute, or arm
-          them all by putting <code>cells: all</code> under <code>runtpt:</code> in the
-          frontmatter.
+          {runbook.inertFences.length === 1 ? 'block looks' : 'blocks look'} runnable, but
+          this runbook sets <code>cells: tagged</code>, so only blocks carrying{' '}
+          <code>run</code> become cells. Add <code>run</code> to the ones you mean to
+          execute, or drop the setting to arm them all.
         </p>
       )}
 
