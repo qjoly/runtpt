@@ -1,6 +1,6 @@
 {
   "name": "@runtpt/core",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -8,7 +8,7 @@
   "files": ["dist"],
   "scripts": { "build": "tsc -b" },
   "dependencies": {
-    "@runtpt/protocol": "0.2.4",
+    "@runtpt/protocol": "0.2.5",
     "yaml": "^2.6.1"
   }
 }
