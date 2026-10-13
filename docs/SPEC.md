@@ -153,7 +153,10 @@ slide itself. The run is recorded, so the demo can be replayed later even offlin
 
 - `FR-E1` The browser never executes a cell itself. It sends a run request to the agent.
 - `FR-E2` Output streams as chunks: stdout, stderr, exit code, duration. Interleaving is
-  preserved with per-chunk sequence numbers.
+  preserved with per-chunk sequence numbers. *Streams* means while the command is still
+  running — a step that prints a line a second produces a chunk a second, in the browser
+  and in the CLI alike. A command that shows nothing until it exits cannot be told apart
+  from one that has hung, which is the only question worth asking about a long step.
 - `FR-E3` A running cell can be cancelled; the agent sends SIGINT then SIGTERM.
 - `FR-E4` A session holds state across cells of the same kernel: working directory,
   exported variables, and for Python a persistent interpreter.

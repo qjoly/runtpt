@@ -107,6 +107,22 @@ git ls-files | grep -iE '^\.github/workflows/' | head
 An empty answer to both is itself an answer, and it should change how confident
 you are about the change you were about to make.
 
+## Does what it talks to still answer?
+
+A repository rarely stands alone. A code block tagged `http` is a request, not a
+shell command — same runbook, different kernel.
+
+```http
+GET https://jsonplaceholder.typicode.com/posts
+```
+
+The status line is the answer you came for. A `200` with a body means the
+dependency is up; a timeout here and a green dashboard elsewhere usually means
+the dashboard is checking something other than what your code calls.
+
+Swap the URL for the API this repository actually depends on and this section
+stops being a demonstration.
+
 ## Before you close the tab
 
 - [ ] I know when this was last touched, and by whom

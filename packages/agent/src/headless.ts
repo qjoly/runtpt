@@ -46,6 +46,14 @@ function displayPath(target: string): string {
   return relative === '' || relative.startsWith('..') ? target : relative
 }
 
+/** Prints whole lines as they arrive and returns whatever is still partial. */
+function emitLines(buffer: string, log: (line: string) => void): string {
+  const parts = buffer.split('\n')
+  const rest = parts.pop() ?? ''
+  for (const line of parts) log(`    | ${line}`)
+  return rest
+}
+
 export async function runHeadless(opts: HeadlessOptions): Promise<HeadlessResult> {
   const log = opts.log ?? ((line: string) => process.stderr.write(line + '\n'))
   const runbookPath = path.resolve(opts.runbookPath)
@@ -117,6 +125,8 @@ export async function runHeadless(opts: HeadlessOptions): Promise<HeadlessResult
     sink: (line) => stream.write(line + '\n'),
   })
 
+  let pendingLine = ''
+
   const pool = new KernelPool({
     cwd: sessionCwd,
     env: { ...runbook.settings.env, ...opts.env, ...resolved.values },
@@ -150,11 +160,20 @@ export async function runHeadless(opts: HeadlessOptions): Promise<HeadlessResult
         },
         onChunk(cell, stream2, data) {
           writer.out({ id: cell.id, stream: stream2, data })
+          // Without this a long step shows nothing at all until it exits, and a
+          // working command is indistinguishable from a hung one.
+          if (!opts.json) {
+            pendingLine = emitLines(pendingLine + data, log)
+          }
         },
         onDisplay(cell, mime, data, encoding) {
           writer.out({ id: cell.id, stream: 'display', data, mime, ...(encoding ? { encoding } : {}) })
         },
         onCellEnd(cell, outcome, tolerated) {
+          if (pendingLine) {
+            log(`    | ${pendingLine}`)
+            pendingLine = ''
+          }
           writer.result({
             id: cell.id,
             status: outcome.status,

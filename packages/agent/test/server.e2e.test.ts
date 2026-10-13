@@ -142,9 +142,15 @@ describeShell('AgentServer', () => {
     const result = await client.wait('result')
     expect(result.status).toBe('failed')
     expect(result.exit).toBe(1)
-    const chunks = client.messages.filter((m) => m.t === 'chunk')
-    expect(chunks.map((c) => c.data).join('')).toContain('out\n')
-    expect(chunks.some((c) => c.stream === 'stderr' && c.data.includes('err'))).toBe(true)
+    // Per stream: chunk boundaries move with the streaming strategy, and joining
+    // two independent pipes into one string asserts an interleaving nobody promises.
+    const textOf = (stream: 'stdout' | 'stderr'): string =>
+      client.messages
+        .filter((m): m is Extract<ServerMessage, { t: 'chunk' }> => m.t === 'chunk' && m.stream === stream)
+        .map((c) => c.data)
+        .join('')
+    expect(textOf('stdout')).toBe('out\n')
+    expect(textOf('stderr')).toBe('err\n')
     client.close()
   })
 

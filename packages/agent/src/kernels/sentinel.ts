@@ -10,14 +10,13 @@ function escapeRegExp(text: string): string {
 
 /**
  * Splits a stream at a per-exec sentinel line. Output is forwarded as it
- * arrives except for a short tail, held back because a sentinel can be cut in
- * half between two reads.
+ * arrives, holding back only the bytes that could still turn out to be the
+ * start of the sentinel.
  */
 export class SentinelStream {
   private buf: string
   private finished = false
   private readonly re: RegExp
-  private readonly keep: number
 
   constructor(
     private readonly marker: string,
@@ -26,7 +25,6 @@ export class SentinelStream {
     carry = '',
   ) {
     this.re = new RegExp(escapeRegExp(marker) + '(\\d+)\\n')
-    this.keep = marker.length + 12
     this.buf = ''
     if (carry) this.push(carry)
   }
@@ -47,12 +45,24 @@ export class SentinelStream {
       return
     }
 
-    if (this.buf.length > this.keep) {
-      const cut = this.buf.length - this.keep
-      const out = this.buf.slice(0, cut)
-      this.buf = this.buf.slice(cut)
+    // Holding back a fixed-size tail meant a command printing less than that
+    // never streamed at all: six short lines stayed invisible until it exited.
+    // Only a suffix that could still grow into the sentinel has to wait.
+    const keep = this.pendingMarkerPrefix()
+    if (this.buf.length > keep) {
+      const out = this.buf.slice(0, this.buf.length - keep)
+      this.buf = this.buf.slice(this.buf.length - keep)
       this.onData(out)
     }
+  }
+
+  /** Length of the longest buffer suffix that is a prefix of the marker. */
+  private pendingMarkerPrefix(): number {
+    const max = Math.min(this.buf.length, this.marker.length - 1)
+    for (let n = max; n > 0; n--) {
+      if (this.buf.endsWith(this.marker.slice(0, n))) return n
+    }
+    return 0
   }
 
   /** Everything after the sentinel: it belongs to the next exec. */
