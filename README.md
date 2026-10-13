@@ -143,8 +143,14 @@ renders from what it stored.
 - [Architecture](docs/ARCHITECTURE.md) — packages, protocol, rejected alternatives
 - [Roadmap](docs/ROADMAP.md)
 
-Two runbooks to try: [`examples/tour.md`](examples/tour.md) needs nothing but a shell,
-and [`examples/hello.md`](examples/hello.md) is what an ops runbook actually looks like.
+Three runbooks to try:
+
+- [`examples/repo-tour.md`](examples/repo-tour.md) — plain markdown, not a line of runtpt
+  syntax anywhere. Ten cells, under a second, run it inside any git repository. This is
+  what "a runbook you already have works as it is" means.
+- [`examples/tour.md`](examples/tour.md) — the same thing with the runtpt features turned
+  on: parameters, dependencies, a tolerated failure, three kernels, speaker notes.
+- [`examples/hello.md`](examples/hello.md) — what an ops runbook actually looks like.
 
 ## Status
 
