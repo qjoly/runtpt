@@ -17,7 +17,7 @@ import { detectKernels } from './kernels/detect.js'
 import { KernelPool, type KernelTarget } from './pool.js'
 import { relativeToRoot, resolveInRoot } from './paths.js'
 
-export const AGENT_VERSION = '0.2.1'
+export const AGENT_VERSION = '0.2.2'
 const PAIRING_TIMEOUT_MS = 10_000
 
 export interface ServerOptions {

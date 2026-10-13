@@ -1,6 +1,6 @@
 {
   "name": "@runtpt/web",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,9 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@runtpt/core": "0.2.1",
-    "@runtpt/format": "0.2.1",
-    "@runtpt/protocol": "0.2.1",
+    "@runtpt/core": "0.2.2",
+    "@runtpt/format": "0.2.2",
+    "@runtpt/protocol": "0.2.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-markdown": "^9.0.1",

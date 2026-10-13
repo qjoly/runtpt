@@ -9,7 +9,7 @@ machine that runs the cells. It picks the right archive for your platform out of
 GitHub release.
 
 ```bash
-mise use -g github:qjoly/runtpt@0.2.1
+mise use -g github:qjoly/runtpt@0.2.2
 runtpt --version
 ```
 
@@ -17,7 +17,7 @@ runtpt --version
 
 ```bash
 export GITHUB_TOKEN=$(gh auth token)       # or GITHUB_API_TOKEN
-mise use -g github:qjoly/runtpt@0.2.1
+mise use -g github:qjoly/runtpt@0.2.2
 ```
 
 **Pin the version, do not ask for `@latest`.** mise refuses releases younger than 24
