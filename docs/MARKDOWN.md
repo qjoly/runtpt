@@ -52,7 +52,7 @@ This keeps existing documentation inert until someone opts a block in.
 | `name="..."` | human label shown in the UI and in the presenter view |
 | `timeout=30s` | kill the cell after this duration |
 | `depends=a,b` | ids that must have succeeded first |
-| `continue-on-error` | a failure does not stop *Run all* |
+| `continue-on-error` | a failure does not stop *Run all*, and does not fail the run in headless mode — but dependents still skip |
 | `confirm` | require an explicit confirmation click before running |
 | `hidden` | not rendered in presentation mode (setup cells) |
 | `cwd=./infra` | working directory for this cell only |

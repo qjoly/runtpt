@@ -118,6 +118,10 @@ slide itself. The run is recorded, so the demo can be replayed later even offlin
   they are exposed to cells as environment variables and as `{{ placeholders }}`.
 - `FR-D5` A cell may declare `depends` on other cell ids; *Run all* respects the order
   and refuses to run a cell whose dependency failed.
+- `FR-D6` `continue-on-error` means the *run* survives the failure, not that the failure
+  did not happen: the cell outcome stays `failed`, its dependents still skip, but a
+  headless run does not exit non-zero because of it. Same semantics as CI tooling
+  elsewhere, so the attribute does not surprise anyone.
 
 ### 7.3 Execution
 
