@@ -107,6 +107,25 @@ git ls-files | grep -iE '^\.github/workflows/' | head
 An empty answer to both is itself an answer, and it should change how confident
 you are about the change you were about to make.
 
+## A step that takes a while
+
+Real steps are slow — a build, a migration, a rollout. The output arrives while
+the command runs, not when it exits, which is the only way to tell a step that
+is working from one that has hung.
+
+The pause below is deliberate, so you can watch it happen:
+
+```bash
+for sha in $(git log -5 --no-show-signature --format=%h); do
+  printf '%s  %s files\n' "$sha" "$(git show --stat --no-show-signature --format='' "$sha" | grep -c '|')"
+  sleep 1
+done
+```
+
+Five lines, one per second. If they all appeared at once at the end, something
+would be buffering them — and you would have no way of knowing whether a step
+that has printed nothing for ten minutes is still alive.
+
 ## Does what it talks to still answer?
 
 A repository rarely stands alone. A code block tagged `http` is a request, not a
