@@ -50,6 +50,33 @@ describe('round trip', () => {
     })
   })
 
+  // FR-D6: the cell failed, the run did not. Both writers must agree on this
+  // without the caller having to remember to pass a status.
+  it('does not fail the run over a tolerated failure', () => {
+    const { w, text } = writer()
+    w.header()
+    w.cell({ id: 'a', hash: 'h', kernel: 'bash', source: ':' })
+    w.result({ id: 'a', status: 'failed', exit: 3, durationMs: 1, tolerated: true })
+    w.footer()
+
+    expect(readRuntpt(text()).footer).toMatchObject({
+      status: 'ok',
+      cells: { ok: 0, failed: 1, skipped: 0, tolerated: 1 },
+    })
+  })
+
+  it('still fails when one failure was not tolerated', () => {
+    const { w, text } = writer()
+    w.header()
+    w.cell({ id: 'a', hash: 'h', kernel: 'bash', source: ':' })
+    w.result({ id: 'a', status: 'failed', exit: 3, durationMs: 1, tolerated: true })
+    w.cell({ id: 'b', hash: 'h', kernel: 'bash', source: ':' })
+    w.result({ id: 'b', status: 'failed', exit: 1, durationMs: 1 })
+    w.footer()
+
+    expect(readRuntpt(text()).footer).toMatchObject({ status: 'failed' })
+  })
+
   it('emits monotonically increasing sequence numbers', () => {
     const { w, lines } = writer()
     w.header()

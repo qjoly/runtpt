@@ -60,7 +60,23 @@ export function App() {
   // The replay's own runbook, pulled from the repository the header points at.
   const loadRecordedRunbook = useCallback(async () => {
     const ref = recording?.header?.runbook
-    if (!ref?.repo) return
+    if (!ref) return
+
+    if (!ref.repo) {
+      // A recording read off the agent's disk: its runbook is a sibling there.
+      if (agent.status !== 'paired') return
+      try {
+        const file = await agent.open(ref.path)
+        setDoc({
+          source: { origin: 'agent', path: ref.path, label: ref.path, writable: true },
+          text: file.content,
+        })
+      } catch (err) {
+        setToast((err as Error).message)
+      }
+      return
+    }
+
     const [owner, name] = ref.repo.split('/')
     if (!owner || !name) return
     try {
@@ -79,7 +95,7 @@ export function App() {
     } catch (err) {
       setToast((err as Error).message)
     }
-  }, [github.token, recording])
+  }, [agent, github.token, recording])
 
   // What the operator asked for before the parameters interrupted them. Without
   // this, filling the modal silently dropped the click that opened it.
@@ -105,7 +121,24 @@ export function App() {
     void runner.runAll()
   }, [doc.source, github.user, runner])
 
-  const startRunAll = useCallback(() => {
+  /**
+   * A recording only belongs to the document it names. Rendering it over
+   * whatever happens to be open produced a page of "not in this run" cells
+   * describing a runbook the operator never ran.
+   */
+  const recordedRunbook = useMemo(() => {
+    if (!recording) return runbook
+    const recorded = recording.header?.runbook.path
+    if (!recorded) return runbook
+    return recorded === doc.source.path ? runbook : null
+  }, [doc.source.path, recording, runbook])
+
+  const canLoadRecordedRunbook =
+    recordedRunbook === null &&
+    recording !== null &&
+    (recording.header?.runbook.repo !== undefined || agent.status === 'paired')
+
+    const startRunAll = useCallback(() => {
     if (!runbook) return
     if (paramsPending) {
       askParams(runAllNow)
@@ -367,9 +400,9 @@ export function App() {
         {view === 'replay' && recording ? (
           <ReplayView
             recording={recording}
-            runbook={runbook}
+            runbook={recordedRunbook}
             label={recordingLabel}
-            onLoadRunbook={recording.header?.runbook.repo ? () => void loadRecordedRunbook() : undefined}
+            onLoadRunbook={canLoadRecordedRunbook ? () => void loadRecordedRunbook() : undefined}
           />
         ) : runbook ? (
           <RunbookView

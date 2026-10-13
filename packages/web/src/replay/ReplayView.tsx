@@ -33,7 +33,18 @@ function Notes({ notes }: { notes: NoteRecord[] }) {
   )
 }
 
-function RecordedCell({ run, cell, stale }: { run: CellRun; cell?: Cell; stale: boolean }) {
+function RecordedCell({
+  run,
+  cell,
+  stale,
+  hasRunbook,
+}: {
+  run: CellRun
+  cell?: Cell
+  stale: boolean
+  /** Without a runbook nothing can be "missing" from it, so the chip would lie. */
+  hasRunbook: boolean
+}) {
   return (
     <section className={`cell recorded ${run.status}`}>
       <header className="cell-head">
@@ -44,7 +55,7 @@ function RecordedCell({ run, cell, stale }: { run: CellRun; cell?: Cell; stale: 
             stale
           </span>
         )}
-        {!cell && <span className="chip">no longer in the runbook</span>}
+        {!cell && hasRunbook && <span className="chip">no longer in the runbook</span>}
         <span className="spacer" />
         <span className={`status ${run.status}`}>{run.status}</span>
         {run.exit !== null && <span className="meta">exit {run.exit}</span>}
@@ -133,7 +144,7 @@ export function ReplayView({ recording, runbook, label, onLoadRunbook }: Props) 
             The runbook is not loaded, so this is the degraded view: recorded sources and outputs only, no prose.
             {onLoadRunbook && (
               <button className="ghost small" onClick={onLoadRunbook}>
-                Load it from GitHub
+                {recording.header?.runbook.repo ? 'Load it from GitHub' : 'Load it from the agent'}
               </button>
             )}
           </p>
@@ -162,14 +173,14 @@ export function ReplayView({ recording, runbook, label, onLoadRunbook }: Props) 
             rendered.add(cell.id)
             return (
               <div key={cell.id}>
-                <RecordedCell run={run} cell={cell} stale={isStale(cell, run.hash)} />
+                <RecordedCell run={run} cell={cell} stale={isStale(cell, run.hash)} hasRunbook />
                 <Notes notes={notesFor(cell.id)} />
               </div>
             )
           })
         : recording.cells.map((run, i) => (
             <div key={`${run.id}-${i}`}>
-              <RecordedCell run={run} stale={false} />
+              <RecordedCell run={run} stale={false} hasRunbook={false} />
               <Notes notes={notesFor(run.id)} />
             </div>
           ))}
@@ -179,7 +190,8 @@ export function ReplayView({ recording, runbook, label, onLoadRunbook }: Props) 
           .filter((run) => !rendered.has(run.id))
           .map((run, i) => (
             <div key={`orphan-${run.id}-${i}`}>
-              <RecordedCell run={run} stale={false} />
+              {/* A runbook is loaded and these are not in it: the chip is the point. */}
+              <RecordedCell run={run} stale={false} hasRunbook />
               <Notes notes={notesFor(run.id)} />
             </div>
           ))}

@@ -137,6 +137,7 @@ export async function runHeadless(opts: HeadlessOptions): Promise<HeadlessResult
             status: outcome.status,
             exit: outcome.exit,
             durationMs: outcome.durationMs,
+            tolerated,
           })
           const suffix = tolerated ? ' (tolerated: continue-on-error)' : ''
           log(`    → ${outcome.status} exit=${outcome.exit ?? '-'} in ${outcome.durationMs}ms${suffix}`)
@@ -157,7 +158,7 @@ export async function runHeadless(opts: HeadlessOptions): Promise<HeadlessResult
         },
       },
     })
-    writer.footer(summary.failed > 0 ? 'failed' : 'ok')
+    writer.footer()
   } finally {
     pool.disposeAll()
     await new Promise<void>((resolve) => stream.end(resolve))

@@ -31,7 +31,7 @@ function byteLength(text: string): number {
  */
 export class RuntptWriter {
   private seq = 0
-  private counts = { ok: 0, failed: 0, skipped: 0 }
+  private counts = { ok: 0, failed: 0, skipped: 0, tolerated: 0 }
   private closed = false
 
   constructor(private readonly opts: WriterOptions) {}
@@ -118,10 +118,23 @@ export class RuntptWriter {
     })
   }
 
-  result(args: { id: string; status: CellStatus; exit: number | null; durationMs: number; ended?: string }): void {
-    if (args.status === 'ok') this.counts.ok++
-    else if (args.status === 'skipped') this.counts.skipped++
-    else this.counts.failed++
+  result(args: {
+    id: string
+    status: CellStatus
+    exit: number | null
+    durationMs: number
+    ended?: string
+    /** Set for a `continue-on-error` cell: it failed, but the run is still fine. */
+    tolerated?: boolean
+  }): void {
+    if (args.status === 'ok') {
+      this.counts.ok++
+    } else if (args.status === 'skipped') {
+      this.counts.skipped++
+    } else {
+      this.counts.failed++
+      if (args.tolerated) this.counts.tolerated++
+    }
 
     this.emit({
       t: 'result',
@@ -147,15 +160,18 @@ export class RuntptWriter {
   footer(status?: FooterRecord['status']): void {
     if (this.closed) return
     this.closed = true
+    // A tolerated failure must not fail the run (FR-D6), so the default status
+    // only looks at the failures nobody asked to carry on past.
+    const untolerated = this.counts.failed - this.counts.tolerated
     this.emit({
       t: 'footer',
       ended: new Date().toISOString(),
-      status: status ?? (this.counts.failed > 0 ? 'failed' : 'ok'),
+      status: status ?? (untolerated > 0 ? 'failed' : 'ok'),
       cells: { ...this.counts },
     })
   }
 
-  get stats(): { ok: number; failed: number; skipped: number } {
+  get stats(): { ok: number; failed: number; skipped: number; tolerated: number } {
     return { ...this.counts }
   }
 }

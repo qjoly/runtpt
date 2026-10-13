@@ -277,6 +277,7 @@ export function useRunner(
                 exit: event.exit,
                 durationMs: event.durationMs,
                 ended: event.endedAt,
+                tolerated: event.status !== 'ok' && cell.attrs.continueOnError,
               })
               setRuntptText(lines.current.join('\n') + '\n')
               done(event.status)
@@ -290,7 +291,13 @@ export function useRunner(
               setRunningCellId(null)
               setError(event.message)
               patch(cell.id, { phase: 'failed', note: event.message })
-              w?.result({ id: cell.id, status: 'failed', exit: null, durationMs: 0 })
+              w?.result({
+                id: cell.id,
+                status: 'failed',
+                exit: null,
+                durationMs: 0,
+                tolerated: cell.attrs.continueOnError,
+              })
               done('failed')
               break
             }

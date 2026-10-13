@@ -74,7 +74,8 @@ export interface FooterRecord {
   t: 'footer'
   ended: string
   status: 'ok' | 'failed' | 'cancelled'
-  cells: { ok: number; failed: number; skipped: number }
+  /** `tolerated` is the subset of `failed` the runbook said to carry on past. */
+  cells: { ok: number; failed: number; skipped: number; tolerated?: number }
 }
 
 export type RuntptRecord =
