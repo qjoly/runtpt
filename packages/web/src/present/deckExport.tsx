@@ -5,6 +5,7 @@ import { Markdown } from '../ui/Markdown.js'
 import { OutputView } from '../runbook/OutputView.js'
 import type { CellState } from '../runbook/useRunner.js'
 import { stepsOf } from './slides.js'
+import { Cover, type CoverStyle } from './Cover.js'
 
 /** Same-origin stylesheets only, which is all of ours, in dev and in a build. */
 function collectCss(): string {
@@ -42,34 +43,45 @@ export function exportDeck(args: {
   assets: AssetContextValue | null
   /** Pinned into the export: the file must not follow the reader's own choice. */
   theme: string
+  /** Slide 0's layout, exactly as presentation mode resolved it. */
+  cover: CoverStyle | null
+  image?: string
 }): string {
   const tree = (
     <div className="deck export">
-      {args.slides.map((slide) => (
-        <section key={slide.index} className="slide">
-          <div className="slide-inner">
-            {stepsOf(slide)
-              .flat()
-              .map((block, i) => {
-                if (block.kind === 'prose') return <Markdown key={i} text={block.markdown} />
-                if (block.kind !== 'cell') return null
-                const state = args.states[block.cell.id]
-                return (
-                  <div key={i} className="slide-cell">
-                    <pre className="source">{args.resolve(block.cell.source)}</pre>
-                    {state && <OutputView chunks={state.chunks} />}
-                    {state && (
-                      <div className="cell-foot">
-                        <span className={`status ${state.phase}`}>{state.phase}</span>
-                        {state.exit !== null && <span className="meta">exit {state.exit}</span>}
-                      </div>
-                    )}
+      {args.slides.map((slide) => {
+        const onCover = args.cover !== null && slide.index === 0
+        const body = stepsOf(slide)
+          .flat()
+          .map((block, i) => {
+            if (block.kind === 'prose') return <Markdown key={i} text={block.markdown} />
+            if (block.kind !== 'cell') return null
+            const state = args.states[block.cell.id]
+            return (
+              <div key={i} className="slide-cell">
+                <pre className="source">{args.resolve(block.cell.source)}</pre>
+                {state && <OutputView chunks={state.chunks} />}
+                {state && (
+                  <div className="cell-foot">
+                    <span className={`status ${state.phase}`}>{state.phase}</span>
+                    {state.exit !== null && <span className="meta">exit {state.exit}</span>}
                   </div>
-                )
-              })}
-          </div>
-        </section>
-      ))}
+                )}
+              </div>
+            )
+          })
+        return (
+          <section key={slide.index} className={`slide${onCover ? ' cover-slide' : ''}`}>
+            {onCover && args.cover ? (
+              <Cover style={args.cover} image={args.image}>
+                {body}
+              </Cover>
+            ) : (
+              <div className="slide-inner">{body}</div>
+            )}
+          </section>
+        )
+      })}
     </div>
   )
 

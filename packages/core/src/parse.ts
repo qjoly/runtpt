@@ -4,7 +4,9 @@ import { isKernel, parseInfoString } from './attrs.js'
 import { parseShellChoice } from './kernel.js'
 import { cellHash } from './hash.js'
 import {
+  COVER_LAYOUTS,
   DEFAULT_SETTINGS,
+  type CoverLayout,
   type Block,
   type Cell,
   type CellKernel,
@@ -135,6 +137,15 @@ function readSettings(fm: Record<string, unknown> | null, diagnostics: Diagnosti
       settings.presentation.slides = slides
     }
     else if (slides) diagnostics.push({ level: 'warn', message: `Unknown slide mode "${slides}"` })
+
+    const cover = asString(p.cover)
+    if (cover && (COVER_LAYOUTS as string[]).includes(cover)) settings.presentation.cover = cover as CoverLayout
+    else if (cover) {
+      diagnostics.push({ level: 'warn', message: `Unknown cover layout "${cover}", keeping "${settings.presentation.cover}"` })
+    }
+
+    const image = asString(p.image)
+    if (image) settings.presentation.image = image
   }
 
   return settings

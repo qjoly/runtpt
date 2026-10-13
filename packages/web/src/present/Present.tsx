@@ -5,6 +5,7 @@ import { Markdown } from '../ui/Markdown.js'
 import { OutputView } from '../runbook/OutputView.js'
 import type { Runner } from '../runbook/useRunner.js'
 import { openChannel, type PresentMessage } from './channel.js'
+import { Cover, coverStyleOf } from './Cover.js'
 import { blocksUpTo, slideMarkdown, stepsOf } from './slides.js'
 import { downloadDeck, exportDeck } from './deckExport.js'
 import { deckTheme } from '../theme/useTheme.js'
@@ -83,6 +84,8 @@ export function Present({ runbook, runner, canRun, canReplay, operatorTheme, onR
   const startedAt = useRef(Date.now())
 
   const slide = slides[index]
+  const presentation = runbook.settings.presentation
+  const cover = useMemo(() => coverStyleOf(presentation, slides[0]), [presentation, slides])
   const steps = slide ? stepsOf(slide).length : 1
   const blocks: Block[] = slide ? blocksUpTo(slide, step) : []
   const cellsHere = blocks.filter((b): b is Extract<Block, { kind: 'cell' }> => b.kind === 'cell')
@@ -192,6 +195,24 @@ export function Present({ runbook, runner, canRun, canReplay, operatorTheme, onR
     return () => window.removeEventListener('keydown', onKey)
   }, [advance, canRun, cellsHere, focusedCell, onExit, onRun, runner])
 
+  const onCover = cover !== null && index === 0
+  const body = blocks.map((block, i) => {
+    if (block.kind === 'prose') return <Markdown key={i} text={block.markdown} />
+    if (block.kind !== 'cell') return null
+    return (
+      <SlideCell
+        key={block.cell.id}
+        cell={block.cell}
+        runner={runner}
+        canRun={canRun}
+        canReplay={canReplay(block.cell.id)}
+        focused={focusedCell?.id === block.cell.id}
+        onFocus={() => setFocusedId(block.cell.id)}
+        onRun={() => onRun(block.cell)}
+      />
+    )
+  })
+
   return (
     <div className="deck" data-theme={theme}>
       <div className="deck-bar">
@@ -216,6 +237,8 @@ export function Present({ runbook, runner, canRun, canReplay, operatorTheme, onR
                 resolve: runner.resolveText,
                 assets,
                 theme,
+                cover,
+                ...(presentation.image ? { image: presentation.image } : {}),
               }),
             )
           }
@@ -227,25 +250,14 @@ export function Present({ runbook, runner, canRun, canReplay, operatorTheme, onR
         </button>
       </div>
 
-      <section className="slide current">
-        <div className="slide-inner">
-          {blocks.map((block, i) => {
-            if (block.kind === 'prose') return <Markdown key={i} text={block.markdown} />
-            if (block.kind !== 'cell') return null
-            return (
-              <SlideCell
-                key={block.cell.id}
-                cell={block.cell}
-                runner={runner}
-                canRun={canRun}
-                canReplay={canReplay(block.cell.id)}
-                focused={focusedCell?.id === block.cell.id}
-                onFocus={() => setFocusedId(block.cell.id)}
-                onRun={() => onRun(block.cell)}
-              />
-            )
-          })}
-        </div>
+      <section className={`slide current${onCover ? ' cover-slide' : ''}`}>
+        {onCover ? (
+          <Cover style={cover} image={presentation.image}>
+            {body}
+          </Cover>
+        ) : (
+          <div className="slide-inner">{body}</div>
+        )}
       </section>
     </div>
   )

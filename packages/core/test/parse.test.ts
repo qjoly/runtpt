@@ -24,7 +24,7 @@ Body.
     expect(rb.title).toBe('Rotate certs')
     expect(rb.settings.shell).toEqual({ kernel: 'zsh' })
     expect(rb.settings.env.KUBECONFIG).toBe('/tmp/kc')
-    expect(rb.settings.presentation).toEqual({ slides: 'h2', theme: 'dark' })
+    expect(rb.settings.presentation).toEqual({ slides: 'h2', theme: 'dark', cover: 'auto' })
     expect(rb.settings.params).toEqual([
       { name: 'CLUSTER', secret: false, required: false, default: 'staging' },
       { name: 'TOKEN', secret: true, required: true },

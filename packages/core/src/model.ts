@@ -94,9 +94,20 @@ export interface ParamSpec {
  */
 export type SlideMode = 'auto' | 'hr' | 'h1' | 'h2'
 
+/**
+ * How slide 0 is dressed. `auto` only promotes a slide that is genuinely a
+ * title (see `isCoverSlide`), so an existing deck keeps the look it had.
+ */
+export type CoverLayout = 'auto' | 'center' | 'split' | 'full' | 'band' | 'none'
+
+export const COVER_LAYOUTS: CoverLayout[] = ['auto', 'center', 'split', 'full', 'band', 'none']
+
 export interface PresentationSettings {
   theme: string
   slides: SlideMode
+  cover: CoverLayout
+  /** Relative like any markdown image, resolved against the runbook's directory. */
+  image?: string
 }
 
 /**
@@ -163,5 +174,5 @@ export const DEFAULT_SETTINGS: RuntptSettings = {
   env: {},
   interpreters: {},
   params: [],
-  presentation: { theme: 'default', slides: 'auto' },
+  presentation: { theme: 'default', slides: 'auto', cover: 'auto' },
 }

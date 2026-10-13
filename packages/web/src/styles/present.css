@@ -3,6 +3,9 @@
   inset: 0;
   display: flex;
   flex-direction: column;
+  /* A deck that overrides the theme must re-state the colour too, or headings
+     keep inheriting the operator's own --fg from the page. */
+  color: var(--fg);
   background: radial-gradient(120% 90% at 50% 0%, var(--deck-bg-top) 0%, var(--bg) 60%);
 }
 
@@ -193,4 +196,182 @@
 
 .slide .md-image-box {
   font-size: clamp(14px, 1.2vw, 20px);
+}
+
+/* Cover slides: slide 0 only, dressed by the deck's `presentation.cover`. */
+
+.slide.cover-slide {
+  padding: 0;
+  align-items: stretch;
+}
+
+.cover {
+  position: relative;
+  flex: 1;
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+}
+
+.cover .cover-text {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.cover .slide-inner {
+  width: min(1100px, 100%);
+}
+
+/* The cover's text block is the panel: no stray margin inside it. */
+.cover .prose > :first-child {
+  margin-top: 0;
+}
+
+.cover .prose > :last-child {
+  margin-bottom: 0;
+}
+
+/* A cover is the deck's own voice, one size louder. */
+.cover .prose h1 {
+  font-size: clamp(38px, 5.8vw, 78px);
+}
+
+.cover .prose p {
+  font-size: clamp(18px, 2vw, 30px);
+  color: var(--fg-dim);
+}
+
+/*
+ * The box is sized by the layout and the image fills it without distortion.
+ * `contain` rather than intrinsic size, so a 640px-wide SVG still spans a band.
+ */
+.cover .cover-figure img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cover-center {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4vh;
+  padding: 6vh 8vw;
+  text-align: center;
+}
+
+.cover-center .cover-text {
+  justify-content: center;
+}
+
+.cover-center .cover-figure {
+  order: 2;
+  height: 40vh;
+  width: min(900px, 100%);
+  min-height: 0;
+}
+
+.cover-split .cover-text {
+  flex: 1 1 50%;
+  padding: 6vh 4vw 6vh 7vw;
+}
+
+.cover-split .cover-figure {
+  order: 2;
+  flex: 1 1 50%;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--bg-sunken);
+  border-left: 1px solid var(--line);
+}
+
+/* A photograph may be cropped to fill its half; a drawing may not. */
+.cover-split .cover-figure[data-kind='raster'] img {
+  object-fit: cover;
+}
+
+.cover-split .cover-figure[data-kind='vector'] {
+  padding: 5vh 2.5vw;
+}
+
+.cover-full {
+  align-items: center;
+  overflow: hidden;
+}
+
+.cover-full .cover-figure,
+.cover-full .cover-scrim {
+  position: absolute;
+  inset: 0;
+}
+
+/* Bleeding to the edges is the whole point of this one: always crop to fill. */
+.cover-full .cover-figure img {
+  object-fit: cover;
+}
+
+/*
+ * Two layers carry the legibility: a wash over the whole picture, then the text
+ * panel itself at 88% of --bg. The words therefore sit on nearly the theme's own
+ * background, whatever the photograph underneath is doing.
+ */
+.cover-full .cover-scrim {
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--bg) 92%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 76%, transparent) 55%,
+    color-mix(in srgb, var(--bg) 56%, transparent) 100%
+  );
+}
+
+.cover-full .cover-text {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 6vh 7vw;
+}
+
+.cover-full .slide-inner {
+  width: min(900px, 100%);
+  padding: 4vh 3vw;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.cover-band {
+  flex-direction: column;
+}
+
+.cover-band .cover-figure {
+  flex: 0 0 auto;
+  width: 100%;
+  height: auto;
+  max-height: 46vh;
+  padding: 5vh 5vw 0;
+}
+
+/* The band is as tall as the picture needs, so a wide diagram spans it. */
+.cover-band .cover-figure img {
+  height: auto;
+  max-height: 41vh;
+}
+
+/* A band of photograph may crop; a diagram shows whole or it is a wrong diagram. */
+.cover-band .cover-figure[data-kind='raster'] {
+  height: 34vh;
+  padding: 0;
+}
+
+.cover-band .cover-figure[data-kind='raster'] img {
+  height: 100%;
+  max-height: none;
+  object-fit: cover;
+}
+
+.cover-band .cover-text {
+  flex: 1;
+  padding: 4vh 8vw 8vh;
 }
