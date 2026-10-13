@@ -1,0 +1,227 @@
+.cell {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--bg-raised);
+  overflow: hidden;
+}
+
+.cell.focused {
+  border-left-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-dim);
+}
+
+.cell.running {
+  border-left-color: var(--accent);
+}
+
+.cell.ok {
+  border-left-color: var(--ok);
+}
+
+.cell.failed,
+.cell.timeout {
+  border-left-color: var(--bad);
+}
+
+.cell.cancelled,
+.cell.skipped {
+  border-left-color: var(--warn);
+}
+
+.cell-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px;
+  background: var(--bg-sunken);
+  border-bottom: 1px solid var(--line);
+}
+
+.cell-id {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--fg);
+}
+
+.kernel {
+  font-family: var(--mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--accent-dim);
+  color: #dfeaff;
+}
+
+.kernel.k-python {
+  background: #3b4a1f;
+  color: #dcf0b4;
+}
+
+.kernel.k-http {
+  background: #4a2f1f;
+  color: #f3d6bf;
+}
+
+.chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  font-size: 11px;
+  color: var(--fg-faint);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 0 7px;
+}
+
+.chip.warn {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.chip.stale {
+  color: var(--stale);
+  border-color: var(--stale);
+}
+
+.source {
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--bg-sunken);
+  color: #e8edf5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+.source.raw {
+  color: var(--fg-dim);
+}
+
+.resolved-hint {
+  padding: 0 12px 6px;
+  font-size: 11px;
+  color: var(--fg-faint);
+}
+
+.resolved-hint.warn {
+  color: var(--warn);
+}
+
+.cell-foot {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 4px 12px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+
+.status {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--fg-faint);
+}
+
+.status.ok {
+  color: var(--ok);
+}
+
+.status.failed,
+.status.timeout {
+  color: var(--bad);
+}
+
+.status.running {
+  color: var(--accent);
+}
+
+.status.cancelled,
+.status.skipped {
+  color: var(--warn);
+}
+
+.meta.note {
+  color: var(--warn);
+}
+
+.output {
+  border-top: 1px solid var(--line);
+  background: #06080c;
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.out {
+  margin: 0;
+  padding: 8px 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.out.stdout {
+  color: #ccd5e2;
+}
+
+.out.stderr {
+  color: #f0b1aa;
+  background: rgba(242, 116, 107, 0.06);
+}
+
+.out-truncated {
+  padding: 4px 12px;
+  background: var(--bg-raised);
+  color: var(--warn);
+  font-size: 11px;
+  border-bottom: 1px solid var(--line);
+}
+
+.out-image {
+  max-width: 100%;
+  display: block;
+  padding: 8px 12px;
+}
+
+.out-html {
+  padding: 8px 12px;
+}
+
+.operator-note {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-left: 2px solid var(--warn);
+  background: rgba(224, 179, 65, 0.07);
+  font-size: 13px;
+}
+
+.operator-note .meta {
+  display: block;
+}
+
+.cell.recorded {
+  border-left-color: var(--line-strong);
+}
+
+.replay-head {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  background: var(--bg-raised);
+}
+
+.replay-head h1 {
+  margin: 0 0 10px;
+  font-size: 22px;
+}
+
+.stale-diff {
+  padding: 0 12px 8px;
+  font-size: 12px;
+  color: var(--stale);
+}
