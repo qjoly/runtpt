@@ -1,0 +1,311 @@
+/*
+ * Every palette lives here, keyed by [data-theme] so presentation mode can scope
+ * a deck to its own look without disturbing the operator's editor. `default` is
+ * also on :root, which is what a static export or a stylesheet loaded without
+ * the pre-paint script falls back to.
+ *
+ * A token missing from one theme would silently inherit the dark default, so
+ * test/themes.test.ts refuses any theme that does not define the full set.
+ */
+
+:root,
+[data-theme='default'] {
+  color-scheme: dark;
+
+  --bg: #0c0f14;
+  --bg-raised: #121722;
+  --bg-sunken: #090b10;
+  --line: #1e2635;
+  --line-strong: #2b374a;
+  --fg: #dde3ec;
+  --fg-dim: #8a97ab;
+  --fg-faint: #5e6a7d;
+  --accent: #6ea8fe;
+  --accent-dim: #2b4a7d;
+  --on-accent: #eaf2ff;
+  --ok: #4ec9a0;
+  --warn: #e0b341;
+  --bad: #f2746b;
+  --stale: #c58af9;
+
+  --topbar-bg: rgba(12, 15, 20, 0.92);
+  --prose-fg: #c6cfdc;
+  --code-fg: #e8edf5;
+
+  --term-bg: #06080c;
+  --term-fg: #ccd5e2;
+  --term-err-fg: #f0b1aa;
+  --term-err-bg: rgba(242, 116, 107, 0.06);
+
+  --danger-bg: #2a1414;
+  --danger-line: #4a2020;
+  --danger-fg: #ffd9d4;
+  --warn-bg: #221c0e;
+  --warn-banner-bg: #2a2411;
+  --warn-line: #4a3f1a;
+  --warn-fg: #f0e0bb;
+  --ok-bg: #0f2219;
+  --ok-line: #1d4a37;
+  --ok-fg: #bdf0da;
+
+  --kernel-bg: #2b4a7d;
+  --kernel-fg: #dfeaff;
+  --kernel-python-bg: #3b4a1f;
+  --kernel-python-fg: #dcf0b4;
+  --kernel-http-bg: #4a2f1f;
+  --kernel-http-fg: #f3d6bf;
+  --kernel-derived-fg: #cfe0ff;
+  --kernel-derived-line: #2b4a7d;
+
+  --overlay: rgba(5, 7, 10, 0.72);
+  --modal-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --operator-note-bg: rgba(224, 179, 65, 0.07);
+
+  --deck-bg-top: #141b27;
+  --deck-cell-bg: rgba(9, 11, 16, 0.75);
+  --note-bg: #1a1608;
+  --note-line: #3a3113;
+}
+
+/*
+ * Light is built from paper, not from inverted dark: warm neutrals, a code
+ * surface darker than the page (sunken reads as sunken under daylight), and
+ * borders dark enough to survive a glare-washed laptop screen.
+ */
+[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #fbfaf8;
+  --bg-raised: #ffffff;
+  --bg-sunken: #f0eee8;
+  --line: #ddd9cf;
+  --line-strong: #948f83;
+  --fg: #1b1e23;
+  --fg-dim: #545a63;
+  --fg-faint: #6b717a;
+  --accent: #19508f;
+  --accent-dim: #d7e3f6;
+  --on-accent: #0e2c53;
+  --ok: #0c6b4b;
+  --warn: #7a5600;
+  --bad: #b02f24;
+  --stale: #6b3aa0;
+
+  --topbar-bg: rgba(251, 250, 248, 0.92);
+  --prose-fg: #262a30;
+  --code-fg: #15181c;
+
+  --term-bg: #f3f1ec;
+  --term-fg: #24282e;
+  --term-err-fg: #8e2419;
+  --term-err-bg: rgba(176, 47, 36, 0.07);
+
+  --danger-bg: #fdeceb;
+  --danger-line: #e8b3ad;
+  --danger-fg: #751c13;
+  --warn-bg: #fbf3dc;
+  --warn-banner-bg: #faf0d2;
+  --warn-line: #ddc383;
+  --warn-fg: #5e4303;
+  --ok-bg: #e6f4ee;
+  --ok-line: #9fd2bd;
+  --ok-fg: #0a523a;
+
+  --kernel-bg: #d7e3f6;
+  --kernel-fg: #0e2c53;
+  --kernel-python-bg: #e3efce;
+  --kernel-python-fg: #334417;
+  --kernel-http-bg: #fae4d2;
+  --kernel-http-fg: #663515;
+  --kernel-derived-fg: #19508f;
+  --kernel-derived-line: #6a8cc0;
+
+  --overlay: rgba(40, 42, 46, 0.38);
+  --modal-shadow: 0 18px 48px rgba(40, 42, 46, 0.18);
+  --operator-note-bg: rgba(122, 86, 0, 0.09);
+
+  --deck-bg-top: #ffffff;
+  --deck-cell-bg: rgba(255, 255, 255, 0.94);
+  --note-bg: #fbf3dc;
+  --note-line: #ddc383;
+}
+
+/*
+ * Pure black ground, every foreground at 7:1 or better and every border above
+ * 3:1 — the one to pick on a washed-out projector or with low vision.
+ */
+[data-theme='high-contrast'] {
+  color-scheme: dark;
+
+  --bg: #000000;
+  --bg-raised: #0d0d0d;
+  --bg-sunken: #161616;
+  --line: #767676;
+  --line-strong: #a6a6a6;
+  --fg: #ffffff;
+  --fg-dim: #e0e0e0;
+  --fg-faint: #c4c4c4;
+  --accent: #7ec8ff;
+  --accent-dim: #10365c;
+  --on-accent: #ffffff;
+  --ok: #46e3a6;
+  --warn: #ffd43b;
+  --bad: #ff9a90;
+  --stale: #dba6ff;
+
+  --topbar-bg: rgba(0, 0, 0, 0.95);
+  --prose-fg: #ffffff;
+  --code-fg: #ffffff;
+
+  --term-bg: #000000;
+  --term-fg: #f2f2f2;
+  --term-err-fg: #ff9a90;
+  --term-err-bg: rgba(255, 154, 144, 0.1);
+
+  --danger-bg: #2b0b08;
+  --danger-line: #ff9a90;
+  --danger-fg: #ffd9d4;
+  --warn-bg: #2a2103;
+  --warn-banner-bg: #2a2103;
+  --warn-line: #ffd43b;
+  --warn-fg: #ffe9a3;
+  --ok-bg: #042018;
+  --ok-line: #46e3a6;
+  --ok-fg: #b7f5de;
+
+  --kernel-bg: #10365c;
+  --kernel-fg: #dbeeff;
+  --kernel-python-bg: #1d2b06;
+  --kernel-python-fg: #d6f2a8;
+  --kernel-http-bg: #33200e;
+  --kernel-http-fg: #ffd6b5;
+  --kernel-derived-fg: #dbeeff;
+  --kernel-derived-line: #7ec8ff;
+
+  --overlay: rgba(0, 0, 0, 0.85);
+  --modal-shadow: 0 0 0 1px #a6a6a6;
+  --operator-note-bg: rgba(255, 212, 59, 0.12);
+
+  --deck-bg-top: #000000;
+  --deck-cell-bg: rgba(13, 13, 13, 0.92);
+  --note-bg: #211a02;
+  --note-line: #ffd43b;
+}
+
+/* Gruvbox dark: warm, low-glare, for the operator who lives in a terminal. */
+[data-theme='gruvbox'] {
+  color-scheme: dark;
+
+  --bg: #282828;
+  --bg-raised: #32302f;
+  --bg-sunken: #1d2021;
+  --line: #3c3836;
+  --line-strong: #5a524c;
+  --fg: #ebdbb2;
+  --fg-dim: #bdae93;
+  --fg-faint: #a89984;
+  --accent: #83a598;
+  --accent-dim: #2f4a44;
+  --on-accent: #f2e5bc;
+  --ok: #b8bb26;
+  --warn: #fabd2f;
+  --bad: #fb7a63;
+  --stale: #d3869b;
+
+  --topbar-bg: rgba(40, 40, 40, 0.93);
+  --prose-fg: #e0d2ac;
+  --code-fg: #fbf1c7;
+
+  --term-bg: #1d2021;
+  --term-fg: #d5c4a1;
+  --term-err-fg: #fb9c8b;
+  --term-err-bg: rgba(251, 73, 52, 0.08);
+
+  --danger-bg: #3c1f1c;
+  --danger-line: #6b2f28;
+  --danger-fg: #fbc6bd;
+  --warn-bg: #3a2f14;
+  --warn-banner-bg: #413418;
+  --warn-line: #6b5520;
+  --warn-fg: #f6dfa4;
+  --ok-bg: #26290f;
+  --ok-line: #4d5319;
+  --ok-fg: #d8dc93;
+
+  --kernel-bg: #2f4a44;
+  --kernel-fg: #d7e8e0;
+  --kernel-python-bg: #3f4216;
+  --kernel-python-fg: #e3e6a8;
+  --kernel-http-bg: #4a2f16;
+  --kernel-http-fg: #f5d4a8;
+  --kernel-derived-fg: #bfd8cf;
+  --kernel-derived-line: #83a598;
+
+  --overlay: rgba(20, 20, 20, 0.74);
+  --modal-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+  --operator-note-bg: rgba(250, 189, 47, 0.08);
+
+  --deck-bg-top: #3c3836;
+  --deck-cell-bg: rgba(29, 32, 33, 0.8);
+  --note-bg: #2e2510;
+  --note-line: #574419;
+}
+
+/* Nord: cool and flat, the calmest of the dark set on a projector. */
+[data-theme='nord'] {
+  color-scheme: dark;
+
+  --bg: #2e3440;
+  --bg-raised: #3b4252;
+  --bg-sunken: #272c36;
+  --line: #434c5e;
+  --line-strong: #5a657c;
+  --fg: #eceff4;
+  --fg-dim: #b9c2d0;
+  --fg-faint: #98a2b3;
+  --accent: #88c0d0;
+  --accent-dim: #2f4c58;
+  --on-accent: #eceff4;
+  --ok: #a3be8c;
+  --warn: #ebcb8b;
+  --bad: #efa39c;
+  --stale: #cba6c5;
+
+  --topbar-bg: rgba(46, 52, 64, 0.93);
+  --prose-fg: #dfe4ed;
+  --code-fg: #eceff4;
+
+  --term-bg: #232831;
+  --term-fg: #d8dee9;
+  --term-err-fg: #eda49d;
+  --term-err-bg: rgba(232, 139, 132, 0.08);
+
+  --danger-bg: #3b2529;
+  --danger-line: #633b3f;
+  --danger-fg: #f3cdc9;
+  --warn-bg: #3a3326;
+  --warn-banner-bg: #403827;
+  --warn-line: #6a5b38;
+  --warn-fg: #f2e2bf;
+  --ok-bg: #2c3628;
+  --ok-line: #4d5f42;
+  --ok-fg: #d4e3c4;
+
+  --kernel-bg: #2f4c58;
+  --kernel-fg: #d8eaf0;
+  --kernel-python-bg: #3a4631;
+  --kernel-python-fg: #d8e5c8;
+  --kernel-http-bg: #4a3a2a;
+  --kernel-http-fg: #f0d9bd;
+  --kernel-derived-fg: #cbe2ea;
+  --kernel-derived-line: #88c0d0;
+
+  --overlay: rgba(25, 29, 36, 0.74);
+  --modal-shadow: 0 24px 60px rgba(14, 17, 22, 0.6);
+  --operator-note-bg: rgba(235, 203, 139, 0.08);
+
+  --deck-bg-top: #3b4252;
+  --deck-cell-bg: rgba(39, 44, 54, 0.8);
+  --note-bg: #352f1f;
+  --note-line: #5c5134;
+}

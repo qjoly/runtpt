@@ -3,8 +3,24 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="dark light" />
     <title>runtpt</title>
+    <script>
+      // Inline and before any stylesheet: React mounts far too late to decide
+      // this, and a reload under a light theme would flash the dark one.
+      // The list mirrors THEME_IDS in src/theme/themes.ts (test/themes.test.ts
+      // fails if they drift).
+      ;(function () {
+        var known = ['default', 'light', 'high-contrast', 'gruvbox', 'nord']
+        var saved = null
+        try {
+          saved = localStorage.getItem('runtpt.theme')
+        } catch (e) {}
+        var choice = saved === 'system' || known.indexOf(saved) !== -1 ? saved : 'system'
+        var light = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+        document.documentElement.setAttribute('data-theme', choice === 'system' ? (light ? 'light' : 'default') : choice)
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -16,6 +16,7 @@ import { useRunner } from './runbook/useRunner.js'
 import { ReplayView } from './replay/ReplayView.js'
 import { Present } from './present/Present.js'
 import { Shortcuts } from './ui/Shortcuts.js'
+import { useTheme } from './theme/useTheme.js'
 import { useSession } from './session/useSession.js'
 import { ShellPanel } from './session/ShellPanel.js'
 import { DEMO_RUNBOOK } from './demo/bundled.js'
@@ -27,6 +28,7 @@ export function App() {
   const agent = useAgent()
   const github = useGithub()
   const session = useSession()
+  const theme = useTheme()
 
   const [doc, setDoc] = useState<LoadedDoc>(DEMO_RUNBOOK)
   const [recording, setRecording] = useState<RunRecording | null>(null)
@@ -289,6 +291,7 @@ export function App() {
           runner={runner}
           canRun={canRun}
           canReplay={(cellId) => recording?.byId.has(cellId) ?? false}
+          operatorTheme={theme.active}
           onRun={runOne}
           onExit={() => setPresenting(false)}
         />
@@ -372,7 +375,7 @@ export function App() {
           <button className="chip-button" onClick={() => setPanel('signin')}>
             {github.user ? github.user.login : 'sign in'}
           </button>
-          <button className="ghost small" onClick={() => setPanel('shortcuts')} aria-label="Keyboard shortcuts">
+          <button className="ghost small" onClick={() => setPanel('shortcuts')} aria-label="Preferences and shortcuts">
             ?
           </button>
         </header>
@@ -502,7 +505,7 @@ export function App() {
             onClose={() => setPanel(null)}
           />
         )}
-        {panel === 'shortcuts' && <Shortcuts onClose={() => setPanel(null)} />}
+        {panel === 'shortcuts' && <Shortcuts theme={theme} onClose={() => setPanel(null)} />}
       </div>
     </AssetProvider>
   )

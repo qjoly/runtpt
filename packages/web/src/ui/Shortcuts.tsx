@@ -1,4 +1,6 @@
 import { Modal } from './Modal.js'
+import { ThemePicker } from '../theme/ThemePicker.js'
+import type { ThemeState } from '../theme/useTheme.js'
 
 const KEYS: [string, string][] = [
   ['Enter', 'run the focused cell'],
@@ -15,21 +17,30 @@ const KEYS: [string, string][] = [
   ['?', 'this list'],
 ]
 
-export function Shortcuts({ onClose }: { onClose: () => void }) {
+export function Shortcuts({ theme, onClose }: { theme: ThemeState; onClose: () => void }) {
   return (
-    <Modal title="Keyboard" onClose={onClose}>
-      <table className="keys">
-        <tbody>
-          {KEYS.map(([key, what]) => (
-            <tr key={key}>
-              <td>
-                <kbd>{key}</kbd>
-              </td>
-              <td>{what}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <Modal title="Preferences" onClose={onClose}>
+      <section className="prefs-section">
+        <h3 className="prefs-head">Theme</h3>
+        <p className="hint">Kept on this machine, not in the runbook.</p>
+        <ThemePicker choice={theme.choice} system={theme.system} onChoose={theme.setChoice} />
+      </section>
+
+      <section className="prefs-section">
+        <h3 className="prefs-head">Keyboard</h3>
+        <table className="keys">
+          <tbody>
+            {KEYS.map(([key, what]) => (
+              <tr key={key}>
+                <td>
+                  <kbd>{key}</kbd>
+                </td>
+                <td>{what}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
     </Modal>
   )
 }

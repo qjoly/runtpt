@@ -197,6 +197,10 @@ slide itself. The run is recorded, so the demo can be replayed later even offlin
 - `FR-P2` Speaker notes via `<!-- notes: ... -->`, invisible in run mode, visible in the
   speaker view.
 - `FR-P3` Presenter view: current slide, next slide, notes, timer, on a second window.
+- `FR-P6` The operator picks a theme for themselves and it is kept on their machine, not
+  in anyone's document. A runbook may name a theme for its deck, which applies while
+  presenting and nowhere else. Every theme defines every token: a palette that forgets
+  one must fail the build, not fall through to a colour from another theme.
 - `FR-P4` Cells stay executable in presentation mode, with output rendered at projection
   size and a *demo failed, show the recording* fallback that replays a prior `.runtpt`.
 - `FR-P5` Export to a self-contained static HTML file, outputs included.

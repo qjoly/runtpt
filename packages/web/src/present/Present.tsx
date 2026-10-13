@@ -7,12 +7,15 @@ import type { Runner } from '../runbook/useRunner.js'
 import { openChannel, type PresentMessage } from './channel.js'
 import { blocksUpTo, slideMarkdown, stepsOf } from './slides.js'
 import { downloadDeck, exportDeck } from './deckExport.js'
+import { deckTheme } from '../theme/useTheme.js'
 
 interface Props {
   runbook: Runbook
   runner: Runner
   canRun: boolean
   canReplay: (cellId: string) => boolean
+  /** The theme the operator picked, which a deck may override while presenting. */
+  operatorTheme: string
   onRun: (cell: Cell) => void
   onExit: () => void
 }
@@ -64,8 +67,13 @@ function SlideCell({
   )
 }
 
-export function Present({ runbook, runner, canRun, canReplay, onRun, onExit }: Props) {
+export function Present({ runbook, runner, canRun, canReplay, operatorTheme, onRun, onExit }: Props) {
   const slides = useMemo(() => buildSlides(runbook), [runbook])
+  // A deck's frontmatter dresses the deck only, and only while it is on screen.
+  const { theme, warning } = useMemo(
+    () => deckTheme(runbook.settings.presentation.theme, operatorTheme),
+    [operatorTheme, runbook.settings.presentation.theme],
+  )
   const assets = useAssets()
   const [index, setIndex] = useState(0)
   const [step, setStep] = useState(0)
@@ -185,12 +193,13 @@ export function Present({ runbook, runner, canRun, canReplay, onRun, onExit }: P
   }, [advance, canRun, cellsHere, focusedCell, onExit, onRun, runner])
 
   return (
-    <div className="deck" data-theme={runbook.settings.presentation.theme}>
+    <div className="deck" data-theme={theme}>
       <div className="deck-bar">
         <span className="meta">
           {index + 1} / {slides.length}
           {steps > 1 && ` · reveal ${step + 1}/${steps}`}
         </span>
+        {warning && <span className="meta deck-theme-note">{warning}</span>}
         <span className="spacer" />
         <button className="ghost small" onClick={() => window.open(`${location.pathname}#presenter`, 'runtpt-presenter', 'width=900,height=640')}>
           Presenter view
@@ -206,6 +215,7 @@ export function Present({ runbook, runner, canRun, canReplay, onRun, onExit }: P
                 states: runner.states,
                 resolve: runner.resolveText,
                 assets,
+                theme,
               }),
             )
           }

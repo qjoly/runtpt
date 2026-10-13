@@ -12,7 +12,7 @@
   gap: 8px;
   align-items: center;
   padding: 8px 14px;
-  background: rgba(12, 15, 20, 0.92);
+  background: var(--topbar-bg);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--line);
 }
@@ -69,14 +69,14 @@
 }
 
 .banner.error-banner {
-  background: #2a1414;
-  border-bottom-color: #4a2020;
-  color: #ffd9d4;
+  background: var(--danger-bg);
+  border-bottom-color: var(--danger-line);
+  color: var(--danger-fg);
 }
 
 .banner.confirm-banner {
-  background: #2a2411;
-  border-bottom-color: #4a3f1a;
+  background: var(--warn-banner-bg);
+  border-bottom-color: var(--warn-line);
 }
 
 .inline-source {
@@ -116,7 +116,7 @@
 
 .prose p,
 .prose li {
-  color: #c6cfdc;
+  color: var(--prose-fg);
 }
 
 .prose code {
@@ -363,7 +363,7 @@
   z-index: 50;
   display: grid;
   place-items: center;
-  background: rgba(5, 7, 10, 0.72);
+  background: var(--overlay);
   padding: 24px;
 }
 
@@ -375,7 +375,7 @@
   background: var(--bg-raised);
   border: 1px solid var(--line-strong);
   border-radius: 10px;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+  box-shadow: var(--modal-shadow);
 }
 
 .modal-wide {
@@ -486,21 +486,21 @@
 }
 
 .warn-box {
-  background: #221c0e;
-  border: 1px solid #4a3f1a;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-line);
   border-radius: var(--radius);
   padding: 10px 12px;
   font-size: 13px;
-  color: #f0e0bb;
+  color: var(--warn-fg);
 }
 
 .ok-box {
-  background: #0f2219;
-  border: 1px solid #1d4a37;
+  background: var(--ok-bg);
+  border: 1px solid var(--ok-line);
   border-radius: var(--radius);
   padding: 10px 12px;
   font-size: 13px;
-  color: #bdf0da;
+  color: var(--ok-fg);
 }
 
 .facts {
@@ -725,4 +725,100 @@
 
 .modal-actions {
   margin-top: 16px;
+}
+
+/* Preferences (the `?` dialog) */
+
+.prefs-section + .prefs-section {
+  margin-top: 22px;
+}
+
+.prefs-head {
+  margin: 0 0 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--fg-faint);
+}
+
+.prefs-section .hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+}
+
+.theme-picker {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.theme-option {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 7px 10px;
+  color: var(--fg-dim);
+}
+
+.theme-option:last-child {
+  border-bottom: none;
+}
+
+.theme-option:hover:not(:disabled) {
+  background: var(--bg-sunken);
+}
+
+.theme-option.selected {
+  color: var(--fg);
+  background: var(--bg-sunken);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.theme-name {
+  min-width: 13ch;
+}
+
+.theme-option .meta {
+  flex: 1;
+}
+
+/* The swatch carries its own [data-theme], so it shows the palette it offers. */
+.theme-swatch {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.theme-swatch i {
+  width: 14px;
+  height: 14px;
+}
+
+.theme-swatch .sw-bg {
+  background: var(--bg);
+}
+
+.theme-swatch .sw-accent {
+  background: var(--accent);
+}
+
+.theme-swatch .sw-ok {
+  background: var(--ok);
+}
+
+.theme-swatch .sw-bad {
+  background: var(--bad);
+}
+
+.deck-theme-note {
+  color: var(--warn);
 }

@@ -23,8 +23,8 @@ runtpt:
     - name: VAULT_TOKEN
       secret: true
   presentation:
-    theme: dark
-    slides: hr        # hr | h1 | h2
+    theme: nord       # the deck's look, while presenting only
+    slides: hr        # auto | hr | h1 | h2
 ---
 ```
 
@@ -190,6 +190,11 @@ A break or a heading **inside a fenced snippet** is part of the snippet. A YAML 
 separator used to cut a deck in three.
 
 Cells keep working; a slide containing a cell gets a run affordance.
+
+`theme:` names the look of the **deck**, and only while presenting: a talk can ask for a
+particular palette without changing the editor of whoever opens it. Unknown name, and the
+deck quietly uses the operator's own theme and says so. The theme an operator picks for
+themselves lives in their browser, not in your runbook.
 
 ## Directives
 

@@ -40,6 +40,8 @@ export function exportDeck(args: {
   resolve: (source: string) => string
   /** Images already in the cache are inlined; the rest fall back to their alt text. */
   assets: AssetContextValue | null
+  /** Pinned into the export: the file must not follow the reader's own choice. */
+  theme: string
 }): string {
   const tree = (
     <div className="deck export">
@@ -76,13 +78,17 @@ export function exportDeck(args: {
   )
 
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><title>${escapeHtml(args.title)}</title>
+<html lang="en" data-theme="${escapeAttr(args.theme)}"><head><meta charset="utf-8"><title>${escapeHtml(args.title)}</title>
 <style>${collectCss()}
-body { margin: 0; }
+body { margin: 0; background: var(--bg); color: var(--fg); }
 .deck.export .slide { display: none; }
 .deck.export .slide.current { display: flex; }
 </style></head>
 <body class="exported-deck">${body}<script>${NAV_SCRIPT}</script></body></html>`
+}
+
+function escapeAttr(text: string): string {
+  return escapeHtml(text).replace(/"/g, '&quot;')
 }
 
 function escapeHtml(text: string): string {

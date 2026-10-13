@@ -51,18 +51,18 @@
   letter-spacing: 0.06em;
   padding: 1px 6px;
   border-radius: 3px;
-  background: var(--accent-dim);
-  color: #dfeaff;
+  background: var(--kernel-bg);
+  color: var(--kernel-fg);
 }
 
 .kernel.k-python {
-  background: #3b4a1f;
-  color: #dcf0b4;
+  background: var(--kernel-python-bg);
+  color: var(--kernel-python-fg);
 }
 
 .kernel.k-http {
-  background: #4a2f1f;
-  color: #f3d6bf;
+  background: var(--kernel-http-bg);
+  color: var(--kernel-http-fg);
 }
 
 .chips {
@@ -93,7 +93,7 @@
   margin: 0;
   padding: 10px 12px;
   background: var(--bg-sunken);
-  color: #e8edf5;
+  color: var(--code-fg);
   white-space: pre-wrap;
   word-break: break-word;
   overflow-x: auto;
@@ -153,7 +153,7 @@
 
 .output {
   border-top: 1px solid var(--line);
-  background: #06080c;
+  background: var(--term-bg);
   max-height: 60vh;
   overflow: auto;
 }
@@ -166,12 +166,12 @@
 }
 
 .out.stdout {
-  color: #ccd5e2;
+  color: var(--term-fg);
 }
 
 .out.stderr {
-  color: #f0b1aa;
-  background: rgba(242, 116, 107, 0.06);
+  color: var(--term-err-fg);
+  background: var(--term-err-bg);
 }
 
 .out-truncated {
@@ -196,7 +196,7 @@
   margin: 8px 0 0;
   padding: 8px 12px;
   border-left: 2px solid var(--warn);
-  background: rgba(224, 179, 65, 0.07);
+  background: var(--operator-note-bg);
   font-size: 13px;
 }
 
@@ -229,8 +229,8 @@
 /* A resolved alias keeps the alias visible: the badge must not claim a pin. */
 .kernel.derived {
   background: transparent;
-  border: 1px dashed var(--accent-dim);
-  color: #cfe0ff;
+  border: 1px dashed var(--kernel-derived-line);
+  color: var(--kernel-derived-fg);
 }
 
 .kernel.k-python.derived,

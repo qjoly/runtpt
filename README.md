@@ -124,6 +124,15 @@ renders from what it stored.
 | `mise run selftest` | the repository's own runbook, headlessly |
 | `mise run bundle` | a standalone binary for this machine |
 
+## Themes
+
+Five palettes — dark, light, high contrast, gruvbox, nord — plus *system*, which follows
+the machine and reacts to it changing. The choice is the operator's and lives in their
+browser; a runbook may name a theme for its **deck**, which applies while presenting and
+nowhere else.
+
+![The light theme, and the preferences dialog that chooses it](docs/images/themes/light-preferences.png)
+
 ## Packages
 
 | Package | Role |
