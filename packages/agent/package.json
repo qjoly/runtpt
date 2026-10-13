@@ -1,6 +1,6 @@
 {
   "name": "@runtpt/agent",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,9 +21,9 @@
     "prebuild": "node ../../scripts/embed-web.mjs"
   },
   "dependencies": {
-    "@runtpt/protocol": "0.3.0",
-    "@runtpt/format": "0.3.0",
-    "@runtpt/core": "0.3.0",
+    "@runtpt/protocol": "0.3.1",
+    "@runtpt/format": "0.3.1",
+    "@runtpt/core": "0.3.1",
     "ws": "^8.18.0"
   },
   "devDependencies": {

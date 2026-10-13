@@ -21,7 +21,7 @@ import { relativeToRoot, resolveInRoot } from './paths.js'
 import { WatchRegistry } from './watch.js'
 import { WEB_ASSETS, type EmbeddedAsset } from './web-assets.js'
 
-export const AGENT_VERSION = '0.3.0'
+export const AGENT_VERSION = '0.3.1'
 const PAIRING_TIMEOUT_MS = 10_000
 
 export interface ServerOptions {
