@@ -2,7 +2,7 @@
 # `mise install` then `mise run dev`. See mise.jdx.dev.
 
 [tools]
-node = "22"
+node = "24"
 
 [env]
 # Keep npm from touching a global prefix outside the project.
